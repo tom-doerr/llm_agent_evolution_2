@@ -4,7 +4,7 @@ Universal Optimizer module for the LLM Agent Evolution package
 import sys
 import os
 import time
-import json
+import tomli_w
 import threading
 import signal
 from concurrent.futures import ThreadPoolExecutor
@@ -107,15 +107,15 @@ def run_optimizer(
         print(results['best_agent']['content'])
         print("=" * 40)
         
-        # Write to output file if specified
+        # Write to save file if specified
         if output_file:
             if output_format == "text":
                 with open(output_file, 'w') as f:
                     f.write(results['best_agent']['content'])
-            else:  # json
-                with open(output_file, 'w') as f:
-                    json.dump(results, f, indent=2)
-            print(f"\nResults written to {output_file}")
+            else:  # toml
+                with open(output_file, 'wb') as f:
+                    tomli_w.dump(results, f)
+            print(f"\nResults saved to {output_file}")
     else:
         print("\nNo valid results found")
     

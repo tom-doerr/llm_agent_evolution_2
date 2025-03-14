@@ -70,7 +70,7 @@ class ScriptEvaluatorPort(ABC):
     """Secondary port for script-based evaluation"""
     
     @abstractmethod
-    def evaluate(self, output: str, script_path: str, timeout: int = 30) -> float:
+    def evaluate(self, output: str, script_path: str, timeout: int = 30, context: str = None) -> float:
         """
         Evaluate the output using the specified script
         
@@ -86,7 +86,7 @@ class ScriptEvaluatorPort(ABC):
     
     @abstractmethod
     def evaluate_batch(self, outputs: List[str], script_path: str, 
-                      timeout: int = 30, parallel: bool = True) -> List[float]:
+                      timeout: int = 30, parallel: bool = True, context: str = None) -> List[float]:
         """
         Evaluate multiple outputs using the specified script
         

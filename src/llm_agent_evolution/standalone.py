@@ -568,10 +568,10 @@ def main():
     )
     
     parser.add_argument(
-        "--output-file", "-o",
+        "--save", "-o",
         type=str,
         default=None,
-        help="File to write the best result to"
+        help="File to save the best result to"
     )
     
     args = parser.parse_args()
@@ -634,11 +634,11 @@ def main():
         print(best_agent['content'])
         print("-" * 60)
         
-        # Write to output file if specified
-        if args.output_file:
-            with open(args.output_file, 'w') as f:
+        # Write to save file if specified
+        if args.save:
+            with open(args.save, 'w') as f:
                 f.write(best_agent['content'])
-            print(f"\nBest result written to: {args.output_file}")
+            print(f"\nBest result saved to: {args.save}")
     else:
         print("\nNo valid results found")
     

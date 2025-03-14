@@ -12,12 +12,14 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
-    # Create subparsers for different commands
-    # Make command optional so we can run without specifying a subcommand
-    subparsers = parser.add_subparsers(dest="command", help="Command to run", required=False)
+    # Add eval_command as an optional positional argument to the main parser
+    parser.add_argument(
+        "eval_command",
+        nargs="?",
+        help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
+    )
     
-    # Add the main arguments to the top-level parser as well
-    # This allows running without a subcommand
+    # Add the main arguments to the top-level parser
     parser.add_argument(
         "--population-size", "-p",
         type=int, 
@@ -80,10 +82,10 @@ def main():
     )
     
     parser.add_argument(
-        "--output-file", "-o",
+        "--save", "-o",
         type=str,
         default=None,
-        help="File to write the best result to"
+        help="File to save the best result to"
     )
     
     # Evolve command
@@ -242,18 +244,18 @@ def main():
     )
     
     optimize_parser.add_argument(
-        "--output-file", "-o",
+        "--save", "-o",
         type=str,
         default=None,
-        help="File to write the best result to"
+        help="File to save the best result to"
     )
     
     optimize_parser.add_argument(
         "--output-format",
         type=str,
-        choices=["text", "json"],
+        choices=["text", "toml"],
         default="text",
-        help="Output format"
+        help="Output format (text or TOML)"
     )
     
     optimize_parser.add_argument(
@@ -322,10 +324,10 @@ def main():
     )
     
     standalone_parser.add_argument(
-        "--output-file", "-o",
+        "--save", "-o",
         type=str,
         default=None,
-        help="File to write the best result to"
+        help="File to save the best result to"
     )
     
     # Demo command
@@ -469,11 +471,11 @@ def main():
                 verbose=args.verbose
             )
             
-            # Write to output file if specified
-            if args.output_file and results["best_agent"]["content"]:
-                with open(args.output_file, 'w') as f:
+            # Write to save file if specified
+            if args.save and results["best_agent"]["content"]:
+                with open(args.save, 'w') as f:
                     f.write(results["best_agent"]["content"])
-                print(f"\nBest result written to: {args.output_file}")
+                print(f"\nBest result saved to: {args.save}")
                 
             return 0
         except Exception as e:

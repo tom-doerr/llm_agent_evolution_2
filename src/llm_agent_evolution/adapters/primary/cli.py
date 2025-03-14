@@ -123,14 +123,14 @@ class CLIAdapter:
             window_std = window_stats.get('std_dev')
             
             # Print each metric with both overall and window values
-            print(f"{'Mean':<15} {stats.get('mean', 0):<10.2f} "
-                  f"{window_mean:.2f if window_mean is not None else 'N/A'}")
+            window_mean_str = f"{window_mean:.2f}" if window_mean is not None else "N/A"
+            print(f"{'Mean':<15} {stats.get('mean', 0):<10.2f} {window_mean_str}")
             
-            print(f"{'Median':<15} {stats.get('median', 0):<10.2f} "
-                  f"{window_median:.2f if window_median is not None else 'N/A'}")
+            window_median_str = f"{window_median:.2f}" if window_median is not None else "N/A"
+            print(f"{'Median':<15} {stats.get('median', 0):<10.2f} {window_median_str}")
             
-            print(f"{'Std Dev':<15} {stats.get('std_dev', 0):<10.2f} "
-                  f"{window_std:.2f if window_std is not None else 'N/A'}")
+            window_std_str = f"{window_std:.2f}" if window_std is not None else "N/A"
+            print(f"{'Std Dev':<15} {stats.get('std_dev', 0):<10.2f} {window_std_str}")
             
             print(f"{'Best':<15} {stats.get('best', 0):<10.2f}")
             print(f"{'Worst':<15} {stats.get('worst', 0):<10.2f}")

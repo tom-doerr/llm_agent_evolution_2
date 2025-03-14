@@ -62,7 +62,7 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                 for key, _ in sorted_items[:len(self.cache) - self.cache_size]:
                     del self.cache[key]
     
-    def evaluate(self, output: str, script_path: str, timeout: int = 30) -> float:
+    def evaluate(self, output: str, script_path: str, timeout: int = 30, context: str = None) -> float:
         """
         Evaluate the output using the specified script
         
@@ -107,6 +107,11 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                 temp_file_path = temp_file.name
                 temp_file.write(output)
             
+            # Set up environment with context if provided
+            env = os.environ.copy()
+            if context:
+                env['AGENT_CONTEXT'] = context
+                
             # Run the script with the output as stdin
             try:
                 process = subprocess.Popen(
@@ -114,7 +119,8 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True
+                    text=True,
+                    env=env
                 )
                 
                 # Send the output to the script
@@ -165,7 +171,7 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                     print(f"Warning: Could not remove temporary file {temp_file_path}: {e}")
     
     def evaluate_batch(self, outputs: List[str], script_path: str, 
-                      timeout: int = 30, parallel: bool = True) -> List[float]:
+                      timeout: int = 30, parallel: bool = True, context: str = None) -> List[float]:
         """
         Evaluate multiple outputs using the specified script
         
@@ -180,12 +186,12 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
         """
         if not parallel:
             # Sequential evaluation
-            return [self.evaluate(output, script_path, timeout) for output in outputs]
+            return [self.evaluate(output, script_path, timeout, context) for output in outputs]
         
         # Parallel evaluation
         with ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.evaluate, output, script_path, timeout)
+                executor.submit(self.evaluate, output, script_path, timeout, context)
                 for output in outputs
             ]
             

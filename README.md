@@ -81,6 +81,117 @@ Run the universal optimizer with a custom evaluation command:
 llm-evolve optimize "python examples/count_a.py" --population-size 50 --parallel-agents 8
 ```
 
+The universal optimizer allows you to optimize any text-based output using evolutionary algorithms. It works by:
+
+1. Generating a population of text outputs
+2. Evaluating each output using your custom command or script
+3. Evolving the population through selection, mating, and mutation
+4. Repeating until optimal solutions are found
+
+The key innovation is the command-based evaluation interface, which allows you to define any optimization goal by providing a command that returns a numerical reward.
+
+#### Evaluation Scripts
+
+The evaluation script is the heart of the Universal Optimizer. It should:
+
+1. Read input from stdin
+2. Process the input in any way you want
+3. Output a numerical reward as the last line of stdout
+
+The reward should be higher for better solutions. The optimizer will try to maximize this value.
+
+#### Example Evaluation Scripts
+
+**Count 'a's in Text**
+
+```python
+#!/usr/bin/env python3
+import sys
+
+text = sys.stdin.read()
+reward = text.count('a')
+print(reward)
+```
+
+**Test Code Against Test Cases**
+
+```python
+#!/usr/bin/env python3
+import sys
+import ast
+
+# Read code from stdin
+code = sys.stdin.read()
+
+# Define test cases
+test_cases = [
+    (5, 120),    # factorial(5) should be 120
+    (0, 1),      # factorial(0) should be 1
+    (1, 1),      # factorial(1) should be 1
+    (10, 3628800) # factorial(10) should be 3628800
+]
+
+# Try to execute the code
+try:
+    # Check syntax
+    ast.parse(code)
+    
+    # Create namespace and execute code
+    namespace = {}
+    exec(code, namespace)
+    
+    # Check if factorial function exists
+    if 'factorial' not in namespace:
+        print("Function 'factorial' not found")
+        print(0)  # Reward
+        sys.exit(0)
+    
+    # Run test cases
+    passing = 0
+    for input_val, expected in test_cases:
+        try:
+            result = namespace['factorial'](input_val)
+            if result == expected:
+                passing += 1
+        except Exception:
+            pass
+    
+    # Calculate reward
+    reward = passing / len(test_cases) * 10
+    
+    # Print results and reward
+    print(f"Passing tests: {passing}/{len(test_cases)}")
+    print(reward)
+    
+except Exception as e:
+    print(f"Error: {e}")
+    print(0)  # Reward
+```
+
+#### Advanced Usage
+
+**Using Initial Content**
+
+You can provide initial content to seed the optimization:
+
+```bash
+llm-evolve optimize --eval-command "python examples/count_a.py" --initial-content "Starting text"
+```
+
+Or from a file:
+
+```bash
+llm-evolve optimize --eval-command "python examples/count_a.py" --initial-file my_starting_point.txt
+```
+
+**Saving Results**
+
+Save the best result to a file:
+
+```bash
+llm-evolve optimize --eval-command "python examples/count_a.py" --output-file best_result.txt
+```
+
 ### Standalone Optimizer (No LLM API Calls)
 
 Run the simplified standalone optimizer that doesn't use LLM API calls:

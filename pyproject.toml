@@ -22,7 +22,8 @@ dependencies = [
     "numpy",
     "tqdm",
     "matplotlib",
-    "rich"
+    "rich",
+    "tomli_w"
 ]
 
 [project.scripts]
