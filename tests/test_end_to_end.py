@@ -51,11 +51,11 @@ def test_llm_evolve_quick_test():
     
     # Create a temporary log file
     with tempfile.NamedTemporaryFile(suffix='.log') as temp_log:
-        # Run the command with quick test mode and explicit subcommand
+        # Run the command with quick test mode without explicit subcommand
         result = subprocess.run(
             [
                 "python", "-m", "llm_agent_evolution", 
-                "evolve", "--quick-test",
+                "--quick-test",
                 "--log-file", temp_log.name,
                 "--max-evaluations", "10"  # Limit to 10 evaluations for speed
             ],
@@ -116,21 +116,25 @@ print(len(text))  # Reward is the length of the text
         # Make the script executable
         os.chmod(script_path, 0o755)
         
-        # Run the standalone optimizer
-        result = subprocess.run(
-            [
-                "python", "-m", "llm_agent_evolution", 
-                "standalone", script_path,
-                "--population-size", "10",
-                "--parallel-agents", "2",
-                "--max-evaluations", "20"
-            ],
-            capture_output=True,
-            text=True
-        )
-        
-        # Check that it ran successfully
-        assert result.returncode == 0
+        # Create a temporary log file for output
+        with tempfile.NamedTemporaryFile(suffix='.log') as temp_log:
+            # Run the command with eval-command instead of standalone subcommand
+            result = subprocess.run(
+                [
+                    "python", "-m", "llm_agent_evolution", 
+                    "--use-mock",
+                    "--eval-command", f"python {script_path}",
+                    "--population-size", "10",
+                    "--parallel-agents", "2",
+                    "--max-evaluations", "20",
+                    "--log-file", temp_log.name
+                ],
+                capture_output=True,
+                text=True
+            )
+            
+            # Check that it ran successfully
+            assert result.returncode == 0
         assert "Starting optimization" in result.stdout
         assert "Optimization completed" in result.stdout
     finally:

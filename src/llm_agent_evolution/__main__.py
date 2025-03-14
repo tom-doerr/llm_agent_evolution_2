@@ -23,6 +23,11 @@ def run_main():
     print(f"- Log file: {os.environ.get('LOG_FILE', 'evolution.log')}")
     print("\nStarting evolution...\n")
     
+    # Handle subcommands in sys.argv
+    if len(sys.argv) > 1 and sys.argv[1] in ["evolve", "standalone", "optimize", "demo"]:
+        # Remove the subcommand to avoid unrecognized argument error
+        sys.argv.remove(sys.argv[1])
+    
     # Run the main application
     return main()
 

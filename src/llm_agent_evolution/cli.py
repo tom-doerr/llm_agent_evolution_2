@@ -356,6 +356,10 @@ def main():
         # This allows running without the explicit 'evolve' subcommand
         # No need to copy arguments since we're using the same namespace
     
+    # Remove subcommand from sys.argv if it's 'evolve' to avoid unrecognized argument error
+    if args.command == "evolve" and len(sys.argv) > 1 and sys.argv[1] == "evolve":
+        sys.argv.remove("evolve")
+    
     if args.command == "evolve":
         # Import and run the main application
         from llm_agent_evolution.application import create_application
