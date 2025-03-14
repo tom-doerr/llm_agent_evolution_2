@@ -55,6 +55,8 @@ def test_save_and_load_agent():
         
         tomli_w.dump(agent_data, temp_file)
     
+    script_path = None
+    
     try:
         # Create a simple evaluation script
         script_content = """#!/usr/bin/env python3
@@ -92,8 +94,13 @@ print(42.0)
                 "--context", "Test context"
             ],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=60  # Add timeout to prevent hanging
         )
+        
+        # Print output for debugging
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
         
         # Check that it ran successfully
         assert result.returncode == 0
@@ -111,20 +118,25 @@ print(42.0)
                 "--context", "Inference context"
             ],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=60  # Add timeout to prevent hanging
         )
+        
+        # Print output for debugging
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
         
         # Check that it ran successfully in inference mode
         assert result.returncode == 0
         assert "Agent output: This is a test task" in result.stdout
         assert "Context: Inference context" in result.stdout
-        assert "Running inference with loaded agent" in result.stdout
+        assert "RUNNING INFERENCE WITH LOADED AGENT" in result.stdout
         
     finally:
         # Clean up
         if os.path.exists(agent_file):
             os.remove(agent_file)
-        if os.path.exists(script_path):
+        if script_path and os.path.exists(script_path):
             os.remove(script_path)
 
 def test_e2e_agent_loading():
@@ -132,6 +144,36 @@ def test_e2e_agent_loading():
     # Skip this test in CI environments
     if os.environ.get('CI') == 'true':
         pytest.skip("Skipping test that requires CLI in CI environment")
+    
+    # Create a simple evaluation script instead of relying on examples/count_a.py
+    script_content = """#!/usr/bin/env python3
+import sys
+import os
+
+# Get context from environment variable
+context = os.environ.get('AGENT_CONTEXT', '')
+
+# Get agent output from stdin
+agent_output = sys.stdin.read()
+
+# Count 'a's in the output
+a_count = agent_output.count('a')
+
+# Print the output and context for verification
+print(f"Agent output: {agent_output}")
+print(f"Context: {context}")
+print(f"a count: {a_count}")
+
+# Return the count as reward
+print(a_count)
+"""
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as script_file:
+        script_path = script_file.name
+        script_file.write(script_content)
+    
+    # Make the script executable
+    os.chmod(script_path, 0o755)
     
     # Create a temporary agent file
     agent_data = {
@@ -164,11 +206,16 @@ def test_e2e_agent_loading():
                 "python", "-m", "llm_agent_evolution",
                 "--use-mock",
                 "--load", agent_file,
-                "--eval-command", "python examples/count_a.py"
+                "--eval-command", f"python {script_path}"
             ],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=60  # Add timeout to prevent hanging
         )
+        
+        # Print output for debugging
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
         
         # Check that it ran successfully
         assert result.returncode == 0
@@ -181,12 +228,17 @@ def test_e2e_agent_loading():
                 "python", "-m", "llm_agent_evolution",
                 "--use-mock",
                 "--load", agent_file,
-                "--eval-command", "python examples/count_a.py",
+                "--eval-command", f"python {script_path}",
                 "--context", "This is a test context"
             ],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=60  # Add timeout to prevent hanging
         )
+        
+        # Print output for debugging
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
         
         # Check that it ran successfully with context
         assert result.returncode == 0
@@ -197,3 +249,5 @@ def test_e2e_agent_loading():
         # Clean up
         if os.path.exists(agent_file):
             os.remove(agent_file)
+        if os.path.exists(script_path):
+            os.remove(script_path)

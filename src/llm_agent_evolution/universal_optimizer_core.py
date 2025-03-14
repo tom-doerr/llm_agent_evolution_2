@@ -276,6 +276,8 @@ class UniversalOptimizer:
             self.logging_adapter.initialize_log()
         except Exception as e:
             print(f"Warning: Could not initialize log: {e}")
+            import traceback
+            print(traceback.format_exc())
         
         # Initialize population
         self.population = self.initialize_population()

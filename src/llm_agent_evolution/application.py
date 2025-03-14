@@ -194,7 +194,10 @@ class EvolutionService(EvolutionUseCase):
                      initial_population: Optional[List[Agent]] = None) -> List[Agent]:
         """Run the evolution process with the given parameters"""
         # Initialize log
-        self.logging_port.initialize_log()
+        try:
+            self.logging_port.initialize_log()
+        except Exception as e:
+            print(f"Warning: Could not initialize log: {e}")
         
         # Reset rewards history
         self.rewards_history = []

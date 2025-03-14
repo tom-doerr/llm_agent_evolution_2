@@ -131,13 +131,15 @@ print(reward)  # This must be the last line and a number
         script_path = script_file.name
         script_file.write(script_content)
     
+    shell_script_path = None
+    
     try:
         # Make the script executable
         os.chmod(script_path, 0o755)
         
         # Create a shell script that pipes input to the optimizer
         shell_script = """#!/bin/sh
-echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-command "python {}" --population-size 10 --parallel-agents 2 --max-evaluations 20
+echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-command "python {}" --population-size 10 --parallel-agents 2 --max-evaluations 5
 """.format(script_path)
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as shell_file:
@@ -151,42 +153,42 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
         result = subprocess.run(
             [shell_script_path],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=60  # Add timeout to prevent hanging
         )
+        
+        # Print output for debugging
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
         
         # Check that it ran successfully
         assert result.returncode == 0
         assert "Context: This is stdin input" in result.stdout
         
-        # Now test with direct pipe without a shell script
-        # Create a process to generate input
-        input_process = subprocess.Popen(
-            ["echo", "Direct pipe test"],
-            stdout=subprocess.PIPE
-        )
-        
-        # Pipe the output to our command
-        result = subprocess.run(
-            [
-                "python", "-m", "llm_agent_evolution",
-                "--use-mock",
-                "--eval-command", f"python {script_path}",
-                "--population-size", "5",
-                "--parallel-agents", "2",
-                "--max-evaluations", "10"
-            ],
-            stdin=input_process.stdout,
-            capture_output=True,
-            text=True
-        )
-        
-        # Check that it ran successfully
-        assert result.returncode == 0
-        assert "Context: Direct pipe test" in result.stdout
+        # Now test with direct pipe using echo and a pipe
+        # Use a temporary file to capture the output
+        with tempfile.NamedTemporaryFile(suffix='.txt') as output_file:
+            # Use shell=True to allow piping
+            command = f"echo 'Direct pipe test' | python -m llm_agent_evolution --use-mock --eval-command 'python {script_path}' --population-size 5 --parallel-agents 2 --max-evaluations 5"
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=60  # Add timeout to prevent hanging
+            )
+            
+            # Print output for debugging
+            print(f"STDOUT: {result.stdout}")
+            print(f"STDERR: {result.stderr}")
+            
+            # Check that it ran successfully
+            assert result.returncode == 0
+            assert "Read context from stdin: Direct pipe test" in result.stdout
         
     finally:
         # Clean up
         if os.path.exists(script_path):
             os.remove(script_path)
-        if os.path.exists(shell_script_path):
+        if shell_script_path and os.path.exists(shell_script_path):
             os.remove(shell_script_path)

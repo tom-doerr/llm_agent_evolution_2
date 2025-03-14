@@ -15,7 +15,9 @@ class FileLoggingAdapter(LoggingPort):
     def initialize_log(self) -> None:
         """Initialize or clear the log file"""
         # Create an empty log file
-        os.makedirs(os.path.dirname(os.path.abspath(self.log_file)), exist_ok=True)
+        log_dir = os.path.dirname(os.path.abspath(self.log_file))
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
         with open(self.log_file, 'w') as f:
             f.write(f"# LLM Agent Evolution Log - Started at {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             f.write(f"# This log contains detailed information about the evolution process\n")

@@ -12,25 +12,31 @@ def main(args: Optional[List[str]] = None) -> int:
     # Create the argument parser
     parser = _create_main_parser()
     
-    # Parse arguments
-    parsed_args = parser.parse_args(args)
-    
-    # Handle the command based on arguments
-    if hasattr(parsed_args, 'command') and parsed_args.command:
-        # If a specific subcommand was provided, handle it
-        if parsed_args.command == "evolve":
-            return _handle_evolve_command(parsed_args)
-        elif parsed_args.command == "optimize":
-            return _handle_optimize_command(parsed_args)
-        elif parsed_args.command == "standalone":
-            return _handle_standalone_command(parsed_args)
-        elif parsed_args.command == "demo":
-            return _handle_demo_command(parsed_args)
-        elif parsed_args.command == "inference":
-            return _handle_inference_command(parsed_args)
-    else:
-        # No subcommand provided, use the default command handler
-        return _handle_default_command(parsed_args)
+    try:
+        # Parse arguments
+        parsed_args = parser.parse_args(args)
+        
+        # Handle the command based on arguments
+        if hasattr(parsed_args, 'command') and parsed_args.command:
+            # If a specific subcommand was provided, handle it
+            if parsed_args.command == "evolve":
+                return _handle_evolve_command(parsed_args)
+            elif parsed_args.command == "optimize":
+                return _handle_optimize_command(parsed_args)
+            elif parsed_args.command == "standalone":
+                return _handle_standalone_command(parsed_args)
+            elif parsed_args.command == "demo":
+                return _handle_demo_command(parsed_args)
+            elif parsed_args.command == "inference":
+                return _handle_inference_command(parsed_args)
+        else:
+            # No subcommand provided, use the default command handler
+            return _handle_default_command(parsed_args)
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return 1
     
     return 0
 def _create_main_parser():
@@ -550,7 +556,7 @@ def _handle_optimize_command(args):
         eval_command = args.eval_command
     
     # Check for positional eval_command
-    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-') and sys.argv[1] not in ["evolve", "optimize", "standalone", "demo", "inference"]:
         eval_command = sys.argv[1]
     
     if not eval_script and not eval_command:
