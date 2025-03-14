@@ -1,6 +1,6 @@
 # LLM Agent Evolution
 
-A framework for evolving LLM-based agents through evolutionary algorithms.
+A framework for evolving LLM-based agents through evolutionary algorithms for any measurable goal.
 
 ## Overview
 
@@ -15,7 +15,8 @@ The system uses a continuous evolution process rather than discrete generations,
 
 - **Chromosomes for Separation of Functionality**: Each agent has three chromosomes to separate different aspects of functionality
 - **Evolutionary Approach**: Everything evolves, including combination and mate selection strategies
-- **Easy Problem Application**: Can be run on any problem with a command-line evaluation interface
+- **Universal Adaptability**: Optimize for any goal expressible as a numerical reward
+- **Command-Based Evaluation**: External commands receive agent output via stdin and return numerical rewards
 - **Information-Dense Output**: Provides concise but informative output
 - **Detailed Logging**: Logs detailed information to a file
 - **Parent Selection**: Uses Pareto distribution weighting by fitness^2 with weighted sampling
@@ -58,10 +59,10 @@ Run a quick test using the mock LLM adapter (no real API calls):
 
 ```bash
 # Using the installed CLI tool
-llm-evolve evolve --quick-test
+llm-evolve --quick-test
 
 # Or using the module directly
-python -m llm_agent_evolution evolve --quick-test
+python -m llm_agent_evolution --quick-test
 ```
 
 ### Main Evolution Process
@@ -69,7 +70,7 @@ python -m llm_agent_evolution evolve --quick-test
 Run the evolution process with a real LLM:
 
 ```bash
-llm-evolve evolve --population-size 50 --parallel-agents 8 --model "openrouter/google/gemini-2.0-flash-001"
+llm-evolve --population-size 50 --parallel-agents 8 --model "openrouter/google/gemini-2.0-flash-001"
 ```
 
 ### Universal Optimizer
@@ -107,14 +108,12 @@ The system optimizes agents through an evolutionary process:
 5. **Mutation**: Use the agent's mutation chromosome as instructions for the LLM to modify it
 6. **Population Management**: Add new agents to population, removing worst if size limit reached
 
-The current implementation optimizes for a specific hidden goal: maximizing the number of 'a' characters in the first 23 positions, with penalties for exceeding 23 characters.
-
 ## Command Line Options
 
 ### Main Evolution Process
 
 ```
-python -m llm_agent_evolution evolve [options]
+llm-evolve [evolve] [options]
 
 Options:
   -p, --population-size INT    Initial population size (default: 100)
@@ -131,7 +130,7 @@ Options:
 ### Universal Optimizer
 
 ```
-python -m llm_agent_evolution optimize EVAL_COMMAND [options]
+llm-evolve optimize EVAL_COMMAND [options]
 
 Options:
   -p, --population-size INT    Initial population size (default: 50)
@@ -153,7 +152,7 @@ Options:
 ### Standalone Optimizer
 
 ```
-python -m llm_agent_evolution standalone EVAL_COMMAND [options]
+llm-evolve standalone EVAL_COMMAND [options]
 
 Options:
   -p, --population-size INT    Initial population size (default: 50)
@@ -163,6 +162,182 @@ Options:
   -s, --seed INT               Random seed for reproducibility
   -v, --verbose                Enable verbose output
   -o, --output-file FILE       File to write the best result to
+```
+
+## Evaluation Scripts
+
+The evaluation script is the heart of the Universal Optimizer. It should:
+
+1. Read input from stdin
+2. Process the input in any way you want
+3. Output a numerical reward as the last line of stdout
+
+The reward should be higher for better solutions. The optimizer will try to maximize this value.
+
+### Example Evaluation Scripts
+
+#### Count 'a's in Text
+
+```python
+#!/usr/bin/env python3
+import sys
+
+text = sys.stdin.read()
+reward = text.count('a')
+print(reward)
+```
+
+#### Test Code Against Test Cases
+
+```python
+#!/usr/bin/env python3
+import sys
+import ast
+
+# Read code from stdin
+code = sys.stdin.read()
+
+# Define test cases
+test_cases = [
+    (5, 120),    # factorial(5) should be 120
+    (0, 1),      # factorial(0) should be 1
+    (1, 1),      # factorial(1) should be 1
+    (10, 3628800) # factorial(10) should be 3628800
+]
+
+# Try to execute the code
+try:
+    # Check syntax
+    ast.parse(code)
+    
+    # Create namespace and execute code
+    namespace = {}
+    exec(code, namespace)
+    
+    # Check if factorial function exists
+    if 'factorial' not in namespace:
+        print("Function 'factorial' not found")
+        print(0)  # Reward
+        sys.exit(0)
+    
+    # Run test cases
+    passing = 0
+    for input_val, expected in test_cases:
+        try:
+            result = namespace['factorial'](input_val)
+            if result == expected:
+                passing += 1
+        except Exception:
+            pass
+    
+    # Calculate reward
+    reward = passing / len(test_cases) * 10
+    
+    # Print results and reward
+    print(f"Passing tests: {passing}/{len(test_cases)}")
+    print(reward)
+    
+except Exception as e:
+    print(f"Error: {e}")
+    print(0)  # Reward
+```
+
+#### Optimize Text Readability
+
+```python
+#!/usr/bin/env python3
+import sys
+import textstat
+
+text = sys.stdin.read()
+
+# Calculate readability metrics
+flesch_reading_ease = textstat.flesch_reading_ease(text)
+flesch_kincaid_grade = textstat.flesch_kincaid_grade(text)
+
+# Normalize and combine metrics
+# Higher Flesch Reading Ease is better (easier to read)
+# Lower Flesch-Kincaid Grade is better (lower grade level required)
+normalized_grade = max(0, 20 - flesch_kincaid_grade) / 20
+normalized_ease = flesch_reading_ease / 100
+
+# Calculate combined reward
+reward = (normalized_grade + normalized_ease) * 5
+
+print(f"Flesch Reading Ease: {flesch_reading_ease}")
+print(f"Flesch-Kincaid Grade: {flesch_kincaid_grade}")
+print(reward)
+```
+
+## Advanced Usage
+
+### Using Initial Content
+
+You can provide initial content to seed the optimization:
+
+```bash
+llm-evolve optimize --eval-script my_eval_script.py --initial-content "Starting text"
+```
+
+Or from a file:
+
+```bash
+llm-evolve optimize --eval-script my_eval_script.py --initial-file my_starting_point.txt
+```
+
+### Saving Results
+
+Save the best result to a file:
+
+```bash
+llm-evolve optimize --eval-script my_eval_script.py --output-file best_result.txt
+```
+
+Save detailed results in JSON format:
+
+```bash
+llm-evolve optimize --eval-script my_eval_script.py --output-file results.json --output-format json
+```
+
+### Using with DSPy
+
+You can use the Universal Optimizer to optimize DSPy prompts:
+
+```python
+#!/usr/bin/env python3
+import sys
+import dspy
+
+# Read prompt from stdin
+prompt = sys.stdin.read()
+
+# Create DSPy program with the prompt
+lm = dspy.LM('openrouter/google/gemini-2.0-flash-001')
+program = dspy.Predict("Question -> Answer", prompt)
+
+# Define test cases
+test_cases = [
+    {"Question": "What is the capital of France?", "Answer": "Paris"},
+    {"Question": "Who wrote Romeo and Juliet?", "Answer": "William Shakespeare"},
+    # Add more test cases...
+]
+
+# Evaluate the prompt
+correct = 0
+for test_case in test_cases:
+    try:
+        prediction = program(dspy.Example(Question=test_case["Question"]))
+        if test_case["Answer"].lower() in prediction.Answer.lower():
+            correct += 1
+    except Exception:
+        pass
+
+# Calculate reward
+reward = correct / len(test_cases) * 10
+
+# Print results and reward
+print(f"Correct answers: {correct}/{len(test_cases)}")
+print(reward)
 ```
 
 ## Architecture

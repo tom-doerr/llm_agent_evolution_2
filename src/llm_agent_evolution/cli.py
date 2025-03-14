@@ -7,13 +7,84 @@ import argparse
 
 def main():
     """Main CLI entry point"""
+    # Ensure argparse is properly imported at the top of the file
     parser = argparse.ArgumentParser(
         description="LLM Agent Evolution - Command Line Interface",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
     # Create subparsers for different commands
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    subparsers = parser.add_subparsers(dest="command", help="Command to run", required=False)
+    
+    # Add the main arguments to the top-level parser as well
+    # This allows running without a subcommand
+    parser.add_argument(
+        "--population-size", "-p",
+        type=int, 
+        default=100,
+        help="Initial population size"
+    )
+    
+    parser.add_argument(
+        "--parallel-agents", "-j",
+        type=int, 
+        default=10,
+        help="Number of agents to evaluate in parallel"
+    )
+    
+    parser.add_argument(
+        "--max-evaluations", "-n",
+        type=int, 
+        default=None,
+        help="Maximum number of evaluations to run"
+    )
+    
+    parser.add_argument(
+        "--use-mock", "--mock",
+        action="store_true",
+        help="Use mock LLM adapter for testing"
+    )
+    
+    parser.add_argument(
+        "--model", "-m",
+        type=str, 
+        default="openrouter/google/gemini-2.0-flash-001",
+        help="LLM model to use"
+    )
+    
+    parser.add_argument(
+        "--log-file", "-l",
+        type=str, 
+        default="evolution.log",
+        help="Log file path"
+    )
+    
+    parser.add_argument(
+        "--seed", "-s",
+        type=int,
+        default=None,
+        help="Random seed for reproducibility"
+    )
+    
+    parser.add_argument(
+        "--eval-command", "-e",
+        type=str,
+        default=None,
+        help="Command to run for evaluation"
+    )
+    
+    parser.add_argument(
+        "--quick-test", "-q",
+        action="store_true",
+        help="Run a quick test with mock LLM"
+    )
+    
+    parser.add_argument(
+        "--output-file", "-o",
+        type=str,
+        default=None,
+        help="File to write the best result to"
+    )
     
     # Evolve command
     evolve_parser = subparsers.add_parser(
@@ -279,6 +350,12 @@ def main():
     # Parse arguments
     args = parser.parse_args()
     
+    # If no command is provided, default to evolve
+    if not args.command:
+        args.command = "evolve"
+        # Copy any top-level arguments to the evolve namespace
+        # This allows running without the explicit 'evolve' subcommand
+        
     if args.command == "evolve":
         # Import and run the main application
         from llm_agent_evolution.application import create_application
