@@ -1,72 +1,88 @@
-# LLM Agent Evolution Implementation Plan
+# Universal Optimization Framework: Implementation Plan
 
-## Current Status and Next Steps
+## Vision
+Create a universal optimization framework that can evolve text-based outputs against any measurable goal using script-based evaluation.
 
-### Completed
-- Basic hexagonal architecture implementation
-- Core domain model (Agent, Chromosome)
-- Evolution services (parent selection, mating)
-- Primary and secondary ports
-- Basic adapters for LLM, logging, and statistics
-- Multithreading support
-- CLI interface
-- Removed Rich dependency and simplified console output
-- Added visualization module for tracking evolution metrics
-- Added Streamlit dashboard for real-time monitoring
+## Core Principles
+1. **Universal Adaptability**: Optimize for any goal expressible as a numerical reward
+2. **Unix Philosophy**: Simple, composable tools that work with existing ecosystems
+3. **Minimal Assumptions**: Domain-agnostic design with few built-in constraints
+4. **Evolutionary Intelligence**: System evolves its strategies over time
 
-### Current Issues
-- Need to optimize the evolution algorithm for better performance
-- Need more comprehensive testing
-- Streamlit dashboard could use further refinements
+## Architecture Overview
 
-### Next Steps (Prioritized)
-1. Optimize the evolution algorithm for better performance
-2. Improve the mock LLM adapter for better testing
-3. Add more unit tests for core functionality
-4. Enhance the Streamlit dashboard with more insights
-5. Implement better logging with more detailed information
-6. Optimize thread synchronization for better performance
-7. Add support for saving/loading the best agents
+### 1. Script-Based Evaluation Interface
+- External scripts receive agent output via stdin
+- Scripts return numerical reward as their last line of output
+- Support for any programming language or evaluation method
+- Caching mechanism for efficiency
 
-### Implementation Tasks
-- [x] Remove Rich dependency from CLI adapter
-- [x] Add visualization module for evolution metrics
-- [x] Create Streamlit dashboard for real-time monitoring
-- [ ] Improve parent selection algorithm
-- [ ] Enhance chromosome combination logic
-- [ ] Add more assertions and error checking
-- [ ] Optimize thread-safe data structures
-- [ ] Implement agent serialization/deserialization
-- [ ] Add command to export best agents
+### 2. Flexible Chromosome System
+- Dynamic chromosome types that can evolve during optimization
+- Support for different chromosome representations
+- Chromosome combination strategies that adapt to the problem
 
-## Architecture Reminder
+### 3. Evolutionary Strategy Market
+- Multiple evolutionary strategies competing for effectiveness
+- Strategy adaptation based on performance
+- Maintenance of strategy diversity
 
-The project follows a hexagonal (ports and adapters) architecture:
+### 4. Universal CLI
+- Simple interface for running optimizations
+- Support for different output formats
+- Integration with existing tools and workflows
 
-- **Domain**: Core entities and business logic
-  - Agent and Chromosome classes
-  - Evolution services (parent selection, mating)
+## Implementation Phases
 
-- **Ports**: Interface definitions
-  - Primary: Evolution use cases
-  - Secondary: LLM, logging, statistics interfaces
+### Phase 1: Core Framework (Current)
+- [x] Script-based evaluation interface
+- [x] Basic evolutionary algorithm
+- [x] Universal CLI
+- [x] Logging and visualization
 
-- **Adapters**: Implementation of interfaces
-  - Primary: CLI interface
-  - Secondary: LLM, logging, statistics, visualization implementations
+### Phase 2: Advanced Features
+- [ ] Strategy market implementation
+- [ ] Dynamic chromosome adaptation
+- [ ] Cross-domain knowledge transfer
+- [ ] Performance optimizations
 
-## Key Constants
-- MAX_CHARS = 1000 (Maximum characters for chromosomes)
-- MAX_POPULATION_SIZE = 1000000 (Default population size limit)
-- TARGET_LENGTH = 23 (Target length for the hidden goal)
-- MAX_OUTPUT_TOKENS = 40 (Limit token output for the DSPy LM)
+### Phase 3: Ecosystem Development
+- [ ] Strategy sharing mechanism
+- [ ] Evaluation script library
+- [ ] Integration with popular tools
+- [ ] Community contribution framework
 
-## Visualization & Monitoring
-- Static visualizations generated after evolution runs
-- Real-time Streamlit dashboard for monitoring evolution progress
-- Live metrics tracking with automatic refresh
+## Use Cases
+1. **Code Optimization**: Evolve code to pass tests, improve performance, reduce bugs
+2. **Content Enhancement**: Optimize writing for readability, engagement, SEO
+3. **DSPy Optimization**: Evolve prompts for better LLM performance
+4. **Data Analysis**: Optimize data processing pipelines
+5. **Scientific Discovery**: Generate and test hypotheses
 
-## Testing Strategy
-- Unit tests for domain logic
-- Integration tests with mock adapters
-- End-to-end tests with mock LLM
+## Technical Components
+
+### Core Components
+- Script Execution Engine
+- Evolutionary Algorithm
+- Chromosome Management
+- Strategy Selection
+- Result Visualization
+
+### Supporting Components
+- Caching System
+- Parallel Execution
+- Security Sandbox
+- Persistence Layer
+
+## Success Metrics
+- Adaptability across different domains
+- Performance compared to manual optimization
+- Ease of use for non-experts
+- Community adoption and contribution
+
+## Immediate Next Steps
+1. Implement script-based evaluation interface
+2. Create universal CLI
+3. Develop basic evolutionary algorithm
+4. Add logging and visualization
+5. Create examples for different use cases
