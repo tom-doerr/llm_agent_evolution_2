@@ -131,7 +131,56 @@ print(len(text))  # Reward is the length of the text
         assert result.returncode == 0
         assert "Evaluation command: python" in result.stdout
         assert "Starting optimization" in result.stdout
+        
+        # Test the inference command
+        # First create a simple agent file
+        import tomli_w
+        agent_data = {
+            "agent": {
+                "id": "test-agent-id",
+                "reward": 42.0,
+                "task_chromosome": {
+                    "content": "Test inference content",
+                    "type": "task"
+                },
+                "mate_selection_chromosome": {
+                    "content": "Select the mate with the highest reward",
+                    "type": "mate_selection"
+                },
+                "mutation_chromosome": {
+                    "content": "Add more a's to the content",
+                    "type": "mutation"
+                }
+            }
+        }
+        
+        with tempfile.NamedTemporaryFile(suffix='.toml', delete=False) as agent_file:
+            agent_file_path = agent_file.name
+            tomli_w.dump(agent_data, agent_file)
+        
+        # Run the inference command
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution", 
+                "inference",
+                "--load", agent_file_path,
+                "--eval-command", f"python {script_path}",
+                "--context", "Test context"
+            ],
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that it ran successfully
+        assert result.returncode == 0
+        assert "RUNNING INFERENCE WITH LOADED AGENT" in result.stdout
+        assert "Loaded agent with ID: test-agent-id" in result.stdout
+        assert "Agent output: Test inference content" in result.stdout
+        assert "Reward: 21.0" in result.stdout  # Length of "Test inference content"
+        
     finally:
         # Clean up
         if os.path.exists(script_path):
             os.remove(script_path)
+        if os.path.exists(agent_file_path):
+            os.remove(agent_file_path)

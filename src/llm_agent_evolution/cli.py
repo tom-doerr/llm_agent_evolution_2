@@ -26,6 +26,8 @@ def main(args: Optional[List[str]] = None) -> int:
             return _handle_standalone_command(parsed_args)
         elif parsed_args.command == "demo":
             return _handle_demo_command(parsed_args)
+        elif parsed_args.command == "inference":
+            return _handle_inference_command(parsed_args)
     else:
         # No subcommand provided, use the default command handler
         return _handle_default_command(parsed_args)
@@ -53,6 +55,7 @@ def _create_main_parser():
     _add_optimize_subparser(subparsers)
     _add_standalone_subparser(subparsers)
     _add_demo_subparser(subparsers)
+    _add_inference_subparser(subparsers)
     
     # Add the main arguments to the top-level parser
     _add_common_arguments(parser)
@@ -314,6 +317,47 @@ def _add_demo_subparser(subparsers):
         default="a",
         help="Initial content for task chromosome"
     )
+
+def _add_inference_subparser(subparsers):
+    """Add the inference subparser"""
+    inference_parser = subparsers.add_parser(
+        "inference", 
+        help="Run inference with a loaded agent (no evolution)"
+    )
+    
+    inference_parser.add_argument(
+        "--load", "-l",
+        type=str,
+        required=True,
+        help="Load a previously saved agent from file"
+    )
+    
+    inference_parser.add_argument(
+        "--eval-command", "-e",
+        type=str,
+        required=True,
+        help="Command to run for evaluation"
+    )
+    
+    inference_parser.add_argument(
+        "--context", "-c",
+        type=str,
+        default=None,
+        help="Context to pass to the agent"
+    )
+    
+    inference_parser.add_argument(
+        "--context-file", "-cf",
+        type=str,
+        default=None,
+        help="File containing context to pass to the agent"
+    )
+    
+    inference_parser.add_argument(
+        "--use-mock", "--mock",
+        action="store_true",
+        help="Use mock LLM adapter for testing"
+    )
     
 
 def _handle_default_command(args):
@@ -342,11 +386,9 @@ def _handle_default_command(args):
         # Run the universal optimizer with the eval command
         return _handle_optimize_command(args)
     
-    # If no specific action is determined, show help
-    print("Error: No command or action specified.")
-    print("Please specify a command or provide an evaluation command.")
-    print("Run with --help for more information.")
-    return 1
+    # If no specific action is determined, run the evolve command
+    # This makes evolve the default when no subcommand or eval_command is specified
+    return _handle_evolve_command(args)
 
 def _handle_quick_test(args):
     """Handle the quick test command"""
@@ -644,6 +686,99 @@ def _handle_demo_command(args):
         use_mock=args.use_mock,
         initial_content=args.demo_initial_content if hasattr(args, 'demo_initial_content') else "a"
     )
+
+def _handle_inference_command(args):
+    """Handle the inference command (run a loaded agent without evolution)"""
+    # Import necessary modules
+    import tomli
+    from llm_agent_evolution.domain.model import Agent, Chromosome
+    
+    print("\n" + "=" * 60)
+    print("RUNNING INFERENCE WITH LOADED AGENT".center(60))
+    print("=" * 60)
+    
+    # Check if the agent file exists
+    if not os.path.exists(args.load):
+        print(f"Error: Agent file not found: {args.load}")
+        return 1
+    
+    # Load the agent from the file
+    try:
+        with open(args.load, 'rb') as f:
+            agent_data = tomli.load(f)
+        
+        # Extract agent information
+        agent_info = agent_data.get('agent', {})
+        
+        # Create the agent
+        agent = Agent(
+            task_chromosome=Chromosome(
+                content=agent_info.get('task_chromosome', {}).get('content', ''),
+                type="task"
+            ),
+            mate_selection_chromosome=Chromosome(
+                content=agent_info.get('mate_selection_chromosome', {}).get('content', ''),
+                type="mate_selection"
+            ),
+            mutation_chromosome=Chromosome(
+                content=agent_info.get('mutation_chromosome', {}).get('content', ''),
+                type="mutation"
+            ),
+            id=agent_info.get('id'),
+            reward=agent_info.get('reward', 0.0)
+        )
+        
+        print(f"Loaded agent with ID: {agent.id}")
+        print(f"Original reward: {agent.reward}")
+        
+        # Get context from file or argument
+        context = args.context
+        if args.context_file and os.path.exists(args.context_file):
+            with open(args.context_file, 'r') as f:
+                context = f.read()
+                print(f"Loaded context from file: {args.context_file}")
+        
+        # Set up environment for context if provided
+        env = os.environ.copy()
+        if context:
+            env['AGENT_CONTEXT'] = context
+            print(f"Using context: {context[:50]}{'...' if len(context) > 50 else ''}")
+        
+        # Run the evaluation command
+        import subprocess
+        result = subprocess.run(
+            args.eval_command,
+            shell=True,
+            input=agent.task_chromosome.content,
+            text=True,
+            capture_output=True,
+            env=env
+        )
+        
+        # Extract the reward from the last line of output
+        output_lines = result.stdout.strip().split('\n')
+        try:
+            reward = float(output_lines[-1])
+            detailed_output = '\n'.join(output_lines[:-1])
+        except (ValueError, IndexError):
+            reward = 0.0
+            detailed_output = result.stdout
+        
+        print("\nAgent evaluation complete")
+        print(f"Reward: {reward}")
+        print(f"\nAgent output: {agent.task_chromosome.content}")
+        
+        if detailed_output:
+            print("\nDetailed evaluation output:")
+            print(detailed_output)
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error loading or evaluating agent: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())

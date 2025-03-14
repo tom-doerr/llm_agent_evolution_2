@@ -100,6 +100,26 @@ print(42.0)
         assert "Agent output: This is a test task" in result.stdout
         assert "Context: Test context" in result.stdout
         
+        # Now test with inference only (no optimization)
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution",
+                "inference",  # New subcommand for just running inference
+                "--use-mock",
+                "--load", agent_file,
+                "--eval-command", f"python {script_path}",
+                "--context", "Inference context"
+            ],
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that it ran successfully in inference mode
+        assert result.returncode == 0
+        assert "Agent output: This is a test task" in result.stdout
+        assert "Context: Inference context" in result.stdout
+        assert "Running inference with loaded agent" in result.stdout
+        
     finally:
         # Clean up
         if os.path.exists(agent_file):

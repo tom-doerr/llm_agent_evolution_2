@@ -223,10 +223,11 @@ def _post_process_task_content(result: List[str]) -> str:
     if len(combined_content) > MAX_CHARS:
         combined_content = combined_content[:MAX_CHARS]
     
-    # For task chromosomes, try to keep length close to TARGET_LENGTH
-    if len(combined_content) > TARGET_LENGTH * 1.5:
+    # For task chromosomes, apply some general length constraints
+    # This is a generic approach that doesn't leak task-specific knowledge
+    if len(combined_content) > 100:  # Use a generic reasonable length
         # Truncate to a reasonable length with some randomness
-        max_length = int(TARGET_LENGTH * (1.0 + random.random() * 0.5))
+        max_length = int(100 * (1.0 + random.random() * 0.5))
         combined_content = combined_content[:max_length]
     
     return combined_content
