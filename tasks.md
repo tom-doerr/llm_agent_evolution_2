@@ -2,9 +2,40 @@ PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EA
 
 
 # add more integration tests using real llm calls
+We should add integration tests that use real LLM calls to verify the full system works correctly:
+1. Create a test that runs a small evolution process with 2-3 agents
+2. Test the universal optimizer with a simple evaluation script
+3. Test the mate selection and mutation with real LLM responses
+4. Verify the CLI interface works end-to-end
+
+These tests should use a minimal number of LLM calls (<100) to be practical while still testing the real functionality.
+DONE
 
 # remove llm-optimize
+The `llm-optimize` entry point should be removed from pyproject.toml since we're consolidating the CLI tools. The universal optimizer functionality is now accessible through the main CLI tool with the `optimize` subcommand:
+```
+python -m llm_agent_evolution optimize "python examples/count_a.py"
+```
+This simplifies the interface and reduces confusion for users.
+DONE
+
 # why do the usage examples you show say python -m llm_agent_evolution? shouldn't it all work usign the cli tool?
+Yes, the examples should use the CLI tool directly. The README should be updated to show both options:
+
+1. Using the installed CLI tool:
+```
+llm-evolve evolve --population-size 50
+llm-evolve optimize "python examples/count_a.py"
+llm-evolve standalone "python examples/count_a.py"
+```
+
+2. Using the module directly (for development or without installation):
+```
+python -m llm_agent_evolution evolve --population-size 50
+```
+
+The examples currently use the module form because it works in both installed and development environments, but we should clarify both options in the documentation.
+DONE
 
 # why do we have different cli tools? seems to me one is just an example of the more general other one
 We have different CLI tools to serve different use cases:
