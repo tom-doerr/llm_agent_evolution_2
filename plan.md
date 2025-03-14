@@ -7,7 +7,7 @@ We'll implement the LLM Agent Evolution project using Hexagonal Architecture to 
 ## 1. Project Structure
 
 ```
-src/llm_agent_evolution/
+llm_agent_evolution/
 ├── __init__.py
 ├── domain/                 # Core domain logic
 │   ├── __init__.py

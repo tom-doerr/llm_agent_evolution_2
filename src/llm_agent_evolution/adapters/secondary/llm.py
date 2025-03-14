@@ -1,7 +1,7 @@
 import dspy
 from typing import List, Optional
-from ....domain.model import Agent, Chromosome
-from ....ports.secondary import LLMPort
+from llm_agent_evolution.domain.model import Agent, Chromosome
+from llm_agent_evolution.ports.secondary import LLMPort
 
 # Constants from spec
 MAX_OUTPUT_TOKENS = 40  # Limit token output for the DSPy LM

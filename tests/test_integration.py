@@ -1,12 +1,17 @@
 import pytest
+import sys
+import os
+import tempfile
+
+# Add the src directory to the path so we can import the package
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
 from llm_agent_evolution.domain.model import Agent, Chromosome
 from llm_agent_evolution.domain.services import mate_agents
 from llm_agent_evolution.adapters.secondary.mock_llm import MockLLMAdapter
 from llm_agent_evolution.adapters.secondary.logging import FileLoggingAdapter
 from llm_agent_evolution.adapters.secondary.statistics import StatisticsAdapter
 from llm_agent_evolution.application import EvolutionService
-import tempfile
-import os
 
 @pytest.fixture
 def evolution_service():

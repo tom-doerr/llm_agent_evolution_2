@@ -1,8 +1,8 @@
 import os
 import time
 from typing import Dict, Any
-from ....domain.model import Agent
-from ....ports.secondary import LoggingPort
+from llm_agent_evolution.domain.model import Agent
+from llm_agent_evolution.ports.secondary import LoggingPort
 
 class FileLoggingAdapter(LoggingPort):
     """Adapter for logging to a file"""

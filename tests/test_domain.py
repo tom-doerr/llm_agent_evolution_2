@@ -1,4 +1,10 @@
 import pytest
+import sys
+import os
+
+# Add the src directory to the path so we can import the package
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
 from llm_agent_evolution.domain.model import Agent, Chromosome
 from llm_agent_evolution.domain.services import select_parents_pareto, combine_chromosomes, mate_agents
 

@@ -1,7 +1,7 @@
 import argparse
 import sys
 from typing import List, Dict, Any
-from ....ports.primary import EvolutionUseCase
+from llm_agent_evolution.ports.primary import EvolutionUseCase
 
 class CLIAdapter:
     """Command-line interface adapter for the evolution system"""

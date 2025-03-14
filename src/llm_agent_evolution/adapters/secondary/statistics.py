@@ -2,7 +2,7 @@ from typing import Dict, Any, List
 import numpy as np
 from collections import deque
 import threading
-from ....ports.secondary import StatisticsPort
+from llm_agent_evolution.ports.secondary import StatisticsPort
 
 class StatisticsAdapter(StatisticsPort):
     """Adapter for tracking and calculating statistics"""
