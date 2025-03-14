@@ -151,7 +151,7 @@ def _add_common_arguments(parser):
     )
     
     parser.add_argument(
-        "--initial-content", "-i",
+        "--initial-content",
         type=str,
         default="",
         help="Initial content for the chromosomes"
@@ -204,7 +204,7 @@ def _add_optimize_subparser(subparsers):
     )
     
     optimize_parser.add_argument(
-        "--initial-content", "-i",
+        "--initial-content", "-I",
         type=str,
         default="",
         help="Initial content for the chromosomes"
@@ -272,7 +272,7 @@ def _add_standalone_subparser(subparsers):
     )
     
     standalone_parser.add_argument(
-        "--initial-content", "-i",
+        "--initial-content", "-I",
         type=str,
         default="",
         help="Initial content for the chromosomes"
@@ -312,7 +312,7 @@ def _add_demo_subparser(subparsers):
     )
     
     demo_parser.add_argument(
-        "--initial-content", "-i",
+        "--initial-content", "-I",
         type=str,
         default="a",
         help="Initial content for task chromosome"
