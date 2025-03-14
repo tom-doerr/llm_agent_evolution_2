@@ -63,6 +63,7 @@ def test_combine_chromosomes_with_empty_content():
 
 def test_combine_task_chromosomes_length_handling():
     """Test that task chromosomes are handled appropriately for length"""
+    from llm_agent_evolution.domain.services import TARGET_LENGTH
     # Create a parent with optimal length
     parent1 = Chromosome(content="a" * TARGET_LENGTH, type="task")
     # Create a parent with too much content

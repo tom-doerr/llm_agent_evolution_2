@@ -29,7 +29,7 @@ case "$1" in
         ;;
     run)
         shift
-        python run.py run "$@"
+        python -m llm_agent_evolution "$@"
         ;;
     *)
         echo "Unknown command: $1"
