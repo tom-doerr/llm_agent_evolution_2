@@ -243,18 +243,24 @@ class UniversalOptimizer:
             Dictionary with optimization results
         """
         # Initialize log
-        self.logging_adapter.initialize_log()
+        try:
+            self.logging_adapter.initialize_log()
+        except Exception as e:
+            print(f"Warning: Could not initialize log: {e}")
         
         # Initialize population
         self.population = self.initialize_population()
         
         # Log start event
-        self.logging_adapter.log_event("Optimization Started", {
-            "eval_script": self.eval_script,
-            "population_size": self.population_size,
-            "parallel_agents": self.parallel_agents,
-            "max_evaluations": max_evaluations or "unlimited"
-        })
+        try:
+            self.logging_adapter.log_event("Optimization Started", {
+                "eval_script": self.eval_script,
+                "population_size": self.population_size,
+                "parallel_agents": self.parallel_agents,
+                "max_evaluations": max_evaluations or "unlimited"
+            })
+        except Exception as e:
+            print(f"Warning: Could not log start event: {e}")
         
         # Add signal handler for graceful shutdown
         original_sigint_handler = signal.getsignal(signal.SIGINT)
@@ -285,96 +291,162 @@ class UniversalOptimizer:
             last_stats_time = time.time()
             last_progress_time = time.time()
             
-            while True:
+            while not self.stop_event.is_set():
                 # Check if we've reached max evaluations
                 current_count = len(self.statistics_adapter.rewards)
                 if max_evaluations and current_count >= max_evaluations:
+                    print("\nReached maximum evaluations")
                     break
                 
                 # Call progress callback if provided (not too frequently)
                 if progress_callback and time.time() - last_progress_time > 0.5:
-                    progress_callback(current_count, max_evaluations)
+                    try:
+                        progress_callback(current_count, max_evaluations)
+                    except Exception as e:
+                        print(f"Error in progress callback: {e}")
                     last_progress_time = time.time()
                 
                 # Display stats periodically
                 if time.time() - last_stats_time > 10:  # Every 10 seconds
-                    stats = self.get_stats()
-                    print(f"\nPopulation: {stats['population_size']}, "
-                          f"Evaluations: {stats['count']}, "
-                          f"Best: {stats['best']:.2f}, "
-                          f"Mean: {stats['mean']:.2f}")
+                    try:
+                        stats = self.get_stats()
+                        print(f"\nPopulation: {stats['population_size']}, "
+                              f"Evaluations: {stats['count']}, "
+                              f"Best: {stats['best']:.2f}, "
+                              f"Mean: {stats['mean']:.2f}")
+                    except Exception as e:
+                        print(f"Error displaying stats: {e}")
                     last_stats_time = time.time()
                 
                 time.sleep(0.1)
                 
         except KeyboardInterrupt:
             print("\nStopping optimization...")
+        except Exception as e:
+            print(f"Error in optimization loop: {e}")
         finally:
             # Signal workers to stop
             self.stop_event.set()
             
             # Wait for workers to finish (with timeout)
             for worker in workers:
-                worker.join(timeout=1.0)
+                try:
+                    worker.join(timeout=1.0)
+                except Exception:
+                    pass
         
         # Get final results
-        results = self.get_results()
+        try:
+            results = self.get_results()
+        except Exception as e:
+            print(f"Error getting results: {e}")
+            results = {
+                "best_agent": None,
+                "top_agents": [],
+                "stats": {"mean": 0, "median": 0, "std_dev": 0, "count": 0, "best": 0},
+                "evaluations": 0
+            }
         
         # Log end event
-        self.logging_adapter.log_event("Optimization Completed", {
-            "total_evaluations": len(self.statistics_adapter.rewards),
-            "final_population_size": len(self.population),
-            "best_reward": results["best_agent"]["reward"] if results["best_agent"] else None
-        })
+        try:
+            self.logging_adapter.log_event("Optimization Completed", {
+                "total_evaluations": len(self.statistics_adapter.rewards),
+                "final_population_size": len(self.population),
+                "best_reward": results["best_agent"]["reward"] if results["best_agent"] else None
+            })
+        except Exception as e:
+            print(f"Warning: Could not log end event: {e}")
         
         return results
     
     def get_stats(self) -> Dict[str, Any]:
         """Get current statistics"""
-        # Get overall statistics
-        stats = self.statistics_adapter.get_stats()
-        
-        # Get sliding window statistics
-        window_stats = self.statistics_adapter.get_sliding_window_stats(window_size=100)
-        
-        # Combine the statistics
-        with self.population_lock:
+        try:
+            # Get overall statistics
+            stats = self.statistics_adapter.get_stats()
+            
+            # Get sliding window statistics
+            window_stats = self.statistics_adapter.get_sliding_window_stats(window_size=100)
+            
+            # Get cache stats
+            try:
+                cache_stats = self.script_evaluator.get_cache_stats()
+            except Exception:
+                cache_stats = {"size": 0, "max_size": 0, "hits": 0, "misses": 0, "hit_ratio": 0}
+            
+            # Get population size without holding the lock for too long
+            population_size = 0
+            try:
+                with self.population_lock:
+                    population_size = len(self.population)
+            except Exception:
+                pass
+            
+            # Combine the statistics
             combined_stats = {
                 **stats,
-                "population_size": len(self.population),
+                "population_size": population_size,
                 "window_stats": window_stats,
-                "cache_stats": self.script_evaluator.get_cache_stats()
+                "cache_stats": cache_stats
             }
-        
-        # Log the statistics
-        self.logging_adapter.log_population_stats(combined_stats)
-        
-        return combined_stats
+            
+            # Log the statistics
+            try:
+                self.logging_adapter.log_population_stats(combined_stats)
+            except Exception as e:
+                print(f"Error logging stats: {e}")
+            
+            return combined_stats
+        except Exception as e:
+            print(f"Error calculating stats: {e}")
+            return {
+                "mean": 0,
+                "median": 0,
+                "std_dev": 0,
+                "count": 0,
+                "best": 0,
+                "population_size": 0,
+                "window_stats": {},
+                "cache_stats": {"size": 0, "max_size": 0, "hits": 0, "misses": 0, "hit_ratio": 0}
+            }
     
     def get_results(self) -> Dict[str, Any]:
         """Get the optimization results"""
-        with self.population_lock:
-            # Sort population by reward
-            sorted_population = sorted(
-                self.population,
-                key=lambda a: a.reward if a.reward is not None else float('-inf'),
-                reverse=True
-            )
+        try:
+            with self.population_lock:
+                if not self.population:
+                    return {
+                        "best_agent": None,
+                        "top_agents": [],
+                        "stats": {"mean": 0, "median": 0, "std_dev": 0, "count": 0, "best": 0},
+                        "evaluations": len(self.statistics_adapter.rewards)
+                    }
+                
+                # Sort population by reward
+                sorted_population = sorted(
+                    self.population,
+                    key=lambda a: a.reward if a.reward is not None else float('-inf'),
+                    reverse=True
+                )
+                
+                # Get the best agent
+                best_agent = sorted_population[0] if sorted_population else None
+                
+                # Get top agents
+                top_agents = []
+                for agent in sorted_population[:10]:  # Top 10 agents
+                    top_agents.append({
+                        "id": agent.id,
+                        "reward": agent.reward,
+                        "content": agent.task_chromosome.content
+                    })
             
-            # Get the best agent
-            best_agent = sorted_population[0] if sorted_population else None
-            
-            # Get top agents
-            top_agents = []
-            for agent in sorted_population[:10]:  # Top 10 agents
-                top_agents.append({
-                    "id": agent.id,
-                    "reward": agent.reward,
-                    "content": agent.task_chromosome.content
-                })
-            
-            # Get statistics
-            stats = self.get_stats()
+            # Get statistics without holding the lock
+            try:
+                stats = self.statistics_adapter.get_stats()
+            except Exception as e:
+                print(f"Error getting statistics: {e}")
+                stats = {"mean": 0, "median": 0, "std_dev": 0, "count": 0, "best": 0}
             
             return {
                 "best_agent": {
@@ -384,6 +456,14 @@ class UniversalOptimizer:
                 } if best_agent else None,
                 "top_agents": top_agents,
                 "stats": stats,
+                "evaluations": len(self.statistics_adapter.rewards)
+            }
+        except Exception as e:
+            print(f"Error getting results: {e}")
+            return {
+                "best_agent": None,
+                "top_agents": [],
+                "stats": {"mean": 0, "median": 0, "std_dev": 0, "count": 0, "best": 0},
                 "evaluations": len(self.statistics_adapter.rewards)
             }
 
@@ -401,6 +481,16 @@ def progress_bar(current: int, total: Optional[int] = None) -> None:
 
 def main():
     """Main entry point for the universal optimizer CLI"""
+    # Set a default timeout for the entire program
+    import signal
+    def timeout_handler(signum, frame):
+        print("\nProgram timeout reached. Exiting.")
+        sys.exit(0)
+    
+    # Set a 2-hour timeout by default
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(7200)  # 2 hours in seconds
+    
     parser = argparse.ArgumentParser(
         description="Universal Optimization CLI - Optimize any text output using script-based evaluation"
     )
