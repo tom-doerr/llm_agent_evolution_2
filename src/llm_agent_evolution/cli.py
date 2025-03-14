@@ -4,12 +4,39 @@ Command-line interface for the LLM Agent Evolution package
 import sys
 import os
 import argparse
+import tempfile
 from typing import List, Optional
 
 def main(args: Optional[List[str]] = None) -> int:
     """Main CLI entry point"""
     # Create the argument parser
     parser = _create_main_parser()
+    
+    # Parse arguments
+    parsed_args = parser.parse_args(args)
+    
+    # Handle the command based on arguments
+    if parsed_args.command:
+        # If a specific subcommand was provided, handle it
+        if parsed_args.command == "evolve":
+            return _handle_evolve_command(parsed_args)
+        elif parsed_args.command == "optimize":
+            return _handle_optimize_command(parsed_args)
+        elif parsed_args.command == "standalone":
+            return _handle_standalone_command(parsed_args)
+        elif parsed_args.command == "demo":
+            return _handle_demo_command(parsed_args)
+    else:
+        # No subcommand provided, use the default command handler
+        return _handle_default_command(parsed_args)
+    
+    return 0
+def _create_main_parser():
+    """Create the main argument parser"""
+    parser = argparse.ArgumentParser(
+        description="LLM Agent Evolution - A framework for evolving LLM-based agents",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     
     # Add subparsers for different commands
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
@@ -19,33 +46,6 @@ def main(args: Optional[List[str]] = None) -> int:
     _add_optimize_subparser(subparsers)
     _add_standalone_subparser(subparsers)
     _add_demo_subparser(subparsers)
-    
-    # Parse arguments and handle commands
-    parsed_args = parser.parse_args(args)
-    
-    # Handle default command
-    if not parsed_args.command:
-        parser.print_help()
-        return 1
-    
-    # Dispatch to the appropriate command handler
-    if parsed_args.command == "evolve":
-        return _handle_evolve_command(parsed_args)
-    elif parsed_args.command == "optimize":
-        return _handle_optimize_command(parsed_args)
-    elif parsed_args.command == "standalone":
-        return _handle_standalone_command(parsed_args)
-    elif parsed_args.command == "demo":
-        return _handle_demo_command(parsed_args)
-    else:
-        parser.print_help()
-        return 1
-def _create_main_parser():
-    """Create the main argument parser"""
-    parser = argparse.ArgumentParser(
-        description="LLM Agent Evolution - Command Line Interface",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
     
     # Add eval_command as an optional positional argument to the main parser
     parser.add_argument(
@@ -148,6 +148,19 @@ def _add_common_arguments(parser):
         type=str,
         default=None,
         help="File containing context to pass to the agent"
+    )
+    
+    parser.add_argument(
+        "--initial-content", "-i",
+        type=str,
+        default="",
+        help="Initial content for the chromosomes"
+    )
+    
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose output"
     )
 
 def _add_evolve_subparser(subparsers):
@@ -306,44 +319,160 @@ def _add_demo_subparser(subparsers):
     )
     
 
+def _handle_default_command(args):
+    """Handle the default command (no subcommand specified)"""
+    # If quick-test is specified, run the quick test
+    if args.quick_test:
+        return _handle_quick_test(args)
+    
+    # If load is specified, run with the loaded agent
+    if args.load:
+        return _handle_loaded_agent(args)
+    
+    # If eval_command is specified (either positional or via --eval-command), run the optimizer
+    eval_command = args.eval_command
+    if not eval_command and hasattr(args, 'eval_command'):
+        eval_command = args.eval_command
+        
+    if eval_command:
+        # Run the universal optimizer with the eval command
+        return _handle_optimize_command(args)
+    
+    # If no specific action is determined, show help
+    print("Error: No command or action specified.")
+    print("Please specify a command or provide an evaluation command.")
+    print("Run with --help for more information.")
+    return 1
+
+def _handle_quick_test(args):
+    """Handle the quick test command"""
+    from llm_agent_evolution.quick_test import main as run_quick_test
+    
+    # Run the quick test
+    return run_quick_test(seed=args.seed)
+
+def _handle_loaded_agent(args):
+    """Handle running with a loaded agent"""
+    # Import necessary modules
+    import tomli
+    from llm_agent_evolution.domain.model import Agent, Chromosome
+    
+    # Check if the agent file exists
+    if not os.path.exists(args.load):
+        print(f"Error: Agent file not found: {args.load}")
+        return 1
+    
+    # Load the agent from the file
+    try:
+        with open(args.load, 'rb') as f:
+            agent_data = tomli.load(f)
+        
+        # Extract agent information
+        agent_info = agent_data.get('agent', {})
+        
+        # Create the agent
+        agent = Agent(
+            task_chromosome=Chromosome(
+                content=agent_info.get('task_chromosome', {}).get('content', ''),
+                type="task"
+            ),
+            mate_selection_chromosome=Chromosome(
+                content=agent_info.get('mate_selection_chromosome', {}).get('content', ''),
+                type="mate_selection"
+            ),
+            mutation_chromosome=Chromosome(
+                content=agent_info.get('mutation_chromosome', {}).get('content', ''),
+                type="mutation"
+            ),
+            reward=agent_info.get('reward', 0.0)
+        )
+        
+        # Get the evaluation command
+        eval_command = args.eval_command
+        if not eval_command:
+            print("Error: No evaluation command specified.")
+            return 1
+        
+        # Run the evaluation
+        print("=" * 60)
+        print("LLM Agent Evolution")
+        print("A framework for evolving LLM-based agents")
+        print("=" * 60)
+        print(f"Loaded agent with ID: {agent_info.get('id', agent.id)}")
+        
+        # Set up environment for context if provided
+        env = os.environ.copy()
+        if args.context:
+            env['AGENT_CONTEXT'] = args.context
+        elif args.context_file and os.path.exists(args.context_file):
+            with open(args.context_file, 'r') as f:
+                env['AGENT_CONTEXT'] = f.read()
+        
+        # Run the evaluation command
+        import subprocess
+        result = subprocess.run(
+            eval_command,
+            shell=True,
+            input=agent.task_chromosome.content,
+            text=True,
+            capture_output=True,
+            env=env
+        )
+        
+        # Extract the reward from the last line of output
+        output_lines = result.stdout.strip().split('\n')
+        try:
+            reward = float(output_lines[-1])
+            detailed_output = '\n'.join(output_lines[:-1])
+        except (ValueError, IndexError):
+            reward = 0.0
+            detailed_output = result.stdout
+        
+        print("\nAgent evaluation complete")
+        print(f"Reward: {reward}")
+        print(f"\nAgent output: {agent.task_chromosome.content}")
+        
+        if detailed_output:
+            print("\nDetailed evaluation output:")
+            print(detailed_output)
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error loading or evaluating agent: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return 1
+
 def _handle_evolve_command(args):
     """Handle the evolve command"""
     # Import and run the main application
     from llm_agent_evolution.application import create_application
     
+    # Determine the evaluation command
+    eval_command = args.eval_command
+    if not eval_command and hasattr(args, 'eval_command') and args.eval_command:
+        eval_command = args.eval_command
+    
     # Create the application
-    cli = create_application(
+    app = create_application(
         model_name=args.model,
         log_file=args.log_file,
         use_mock=args.use_mock,
         random_seed=args.seed,
-        eval_command=args.eval_command
+        eval_command=eval_command,
+        load_agent_path=args.load if hasattr(args, 'load') else None
     )
     
-    # Override arguments
-    cli_args = argparse.Namespace()
-    cli_args.population_size = args.population_size
-    cli_args.parallel_agents = args.parallel_agents
-    cli_args.max_evaluations = args.max_evaluations
-    cli_args.use_mock = args.use_mock
-    cli_args.quick_test = args.quick_test
-    cli_args.seed = args.seed
-    cli_args.model = args.model
-    cli_args.log_file = args.log_file
-    cli_args.eval_command = args.eval_command
-    cli_args.save = args.save if hasattr(args, 'save') else None
-    cli_args.load = args.load if hasattr(args, 'load') else None
-    cli_args.context = args.context if hasattr(args, 'context') else None
-    cli_args.context_file = args.context_file if hasattr(args, 'context_file') else None
+    # Run the evolution
+    app.run_evolution(
+        population_size=args.population_size,
+        parallel_agents=args.parallel_agents,
+        max_evaluations=args.max_evaluations,
+        initial_content=args.initial_content if hasattr(args, 'initial_content') else ""
+    )
     
-    # Store original parse_args method
-    original_parse_args = cli.parse_args
-    
-    # Override parse_args to return our fixed arguments
-    cli.parse_args = lambda: cli_args
-    
-    # Run the application
-    return cli.run()
+    return 0
     
 def _handle_optimize_command(args):
     """Handle the optimize command"""
@@ -351,8 +480,8 @@ def _handle_optimize_command(args):
     from llm_agent_evolution.universal_optimize import run_optimizer
     
     # Get initial content from file if specified
-    initial_content = args.initial_content
-    if args.initial_file:
+    initial_content = args.initial_content if hasattr(args, 'initial_content') else ""
+    if hasattr(args, 'initial_file') and args.initial_file:
         if not os.path.exists(args.initial_file):
             print(f"Error: Initial content file not found: {args.initial_file}")
             return 1
@@ -360,7 +489,7 @@ def _handle_optimize_command(args):
             initial_content = f.read()
     
     # Determine evaluation method
-    eval_script = args.eval_script
+    eval_script = args.eval_script if hasattr(args, 'eval_script') else None
     eval_command = args.eval_command
     
     if not eval_script and not eval_command:
@@ -370,8 +499,6 @@ def _handle_optimize_command(args):
     # If both are provided, eval_command takes precedence
     if eval_command and not eval_script:
         # Create a temporary script that runs the eval command
-        import tempfile
-        
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.sh') as f:
             eval_script = f.name
             f.write("#!/bin/sh\n")
@@ -382,28 +509,32 @@ def _handle_optimize_command(args):
     
     try:
         # Run the optimizer
+        script_timeout = args.script_timeout if hasattr(args, 'script_timeout') else 30
+        output_format = args.output_format if hasattr(args, 'output_format') else "text"
+        max_chars = args.max_chars if hasattr(args, 'max_chars') else 1000
+        
         result = run_optimizer(
             eval_script=eval_script,
             population_size=args.population_size,
             parallel_agents=args.parallel_agents,
             max_evaluations=args.max_evaluations,
-            use_mock_llm=args.use_mock,  # Use the common flag name
+            use_mock_llm=args.use_mock,
             model_name=args.model,
             log_file=args.log_file,
             random_seed=args.seed,
-            script_timeout=args.script_timeout,
+            script_timeout=script_timeout,
             initial_content=initial_content,
-            output_file=args.save,  # Use the common save parameter
-            output_format=args.output_format,
-            max_chars=args.max_chars,
-            verbose=args.verbose,
+            output_file=args.save if hasattr(args, 'save') else None,
+            output_format=output_format,
+            max_chars=max_chars,
+            verbose=args.verbose if hasattr(args, 'verbose') else False,
             eval_command=eval_command
         )
         
-        return result
+        return 0
     finally:
         # Clean up temporary script if created
-        if eval_command and not args.eval_script and os.path.exists(eval_script):
+        if eval_command and not eval_script and os.path.exists(eval_script):
             os.remove(eval_script)
 
 def _handle_standalone_command(args):
@@ -418,13 +549,13 @@ def _handle_standalone_command(args):
             population_size=args.population_size,
             parallel_agents=args.parallel_agents,
             max_evaluations=args.max_evaluations,
-            initial_content=args.initial_content,
+            initial_content=args.initial_content if hasattr(args, 'initial_content') else "",
             random_seed=args.seed,
-            verbose=args.verbose
+            verbose=args.verbose if hasattr(args, 'verbose') else False
         )
         
         # Write to save file if specified
-        if args.save and results["best_agent"]["content"]:
+        if hasattr(args, 'save') and args.save and results["best_agent"]["content"]:
             with open(args.save, 'w') as f:
                 f.write(results["best_agent"]["content"])
             print(f"\nBest result saved to: {args.save}")
@@ -444,7 +575,7 @@ def _handle_demo_command(args):
     # Run the demo
     return run_evolution_demo(
         use_mock=args.use_mock,
-        initial_content=args.initial_content
+        initial_content=args.initial_content if hasattr(args, 'initial_content') else "a"
     )
 
 if __name__ == "__main__":
