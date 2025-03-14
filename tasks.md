@@ -1,3 +1,15 @@
+PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH 
+
+# why do we have different cli tools? seems to me one is just an example of the more general other one
+# remove all of the visualization code
+# do we have the evolution demo in our cli? meaning can it produce similarly detailed output? how?
+# give me rm commands i should run to remove legacy code
+# are there integration tests we could add?
+# could we make the integration tests use relatively few llm requests (<100 per test) so we can test really end to end?
+# do we need the llm api mocking or could we remove that? real llm requests with gemini flash are inexpensive
+# can i delete universal optimize py? 
+# can i delete standalone optimizer? why is it outside the package?
+
 # evaluate opportunities for reducing repo size
 The repository size can be reduced by:
 - Removing the streamlit dashboard and visualization code
@@ -59,13 +71,9 @@ Issues to address:
 - Test coverage could be improved
 DONE
 
-# TODO: Implement proper error handling in script_evaluator.py
-# TODO: Add more test cases for the universal optimizer
-# TODO: Refactor domain services to improve code reuse
-# TODO: Simplify the CLI interface further
-# TODO: Improve chromosome initialization to avoid task leakage
-# TODO: Create a simplified standalone version for easy distribution
-# TODO: Add documentation for extending the framework
-# TODO: Optimize performance for large populations
-# TODO: Remove redundant scripts (evolution_demo.py, direct_run.py, run.py)
-# TODO: Move test_llm_adapter_script.py to tests/ directory
+# Refactor domain services to improve code reuse
+# Simplify the CLI interface further
+# Improve chromosome initialization to avoid task leakage
+# Create a simplified standalone version for easy distribution
+# Remove redundant scripts (evolution_demo.py, direct_run.py, run.py)
+# Move test_llm_adapter_script.py to tests/ directory
