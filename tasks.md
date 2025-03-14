@@ -11,6 +11,24 @@ PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EA
 # output format seems like bloat, please standardise to toml
 # why do we have so many commands for llm-evolve? i just want the command as string argument for optimization functionality
 # add --load argument for loading a saved agent
+# add support for stdin into an agent
+# how can we further reduce project size? 
+# please reduce the size of tasks.md, maybe summarize the text below done items don't edit the headings! don't edit not done headings!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
