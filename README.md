@@ -28,5 +28,5 @@ population = evolve_agents(
 pip install -e ".[test]"
 
 # Run tests
-pytest
+python -m pytest
 ```
