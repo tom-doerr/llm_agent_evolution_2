@@ -24,12 +24,13 @@ def evaluate(text):
 
 if __name__ == "__main__":
     # Read input from stdin
-    input_text = sys.stdin.read()
+    input_text = sys.stdin.read().strip()
     
     # Evaluate the input
     reward = evaluate(input_text)
     
-    # Print the reward as the last line of output
+    # Print detailed information for debugging
+    print(f"Text: '{input_text[:50]}{'...' if len(input_text) > 50 else ''}'")
     print(f"Text length: {len(input_text)}")
     print(f"'a' count in first 23 chars: {input_text[:23].count('a')}")
     print(f"Length penalty: {max(0, len(input_text) - 23)}")

@@ -237,6 +237,12 @@ class UniversalOptimizer:
             thread.start()
             workers.append(thread)
         
+        # Evaluate initial population to get starting rewards
+        print("Evaluating initial population...")
+        with ThreadPoolExecutor(max_workers=self.parallel_agents) as executor:
+            list(executor.map(self.evaluate_agent, self.population))
+        print(f"Initial population evaluated. Starting evolution...")
+        
         try:
             # Monitor progress
             last_stats_time = time.time()
@@ -474,6 +480,14 @@ def main():
             return 1
         with open(args.initial_file, 'r') as f:
             initial_content = f.read()
+    
+    # Make the evaluation script executable if it's not already
+    if not os.access(args.eval_script, os.X_OK):
+        try:
+            os.chmod(args.eval_script, os.stat(args.eval_script).st_mode | 0o111)
+            print(f"Made evaluation script executable: {args.eval_script}")
+        except Exception as e:
+            print(f"Warning: Could not make evaluation script executable: {e}")
     
     # Create and run the optimizer
     optimizer = UniversalOptimizer(
