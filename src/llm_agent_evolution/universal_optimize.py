@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 """
-Universal Optimization CLI - Optimize any text output using script-based evaluation
+Universal Optimizer module for the LLM Agent Evolution package
 """
 import sys
 import os
-import argparse
 import time
 import json
 import threading
 import signal
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional
-
-# Add the src directory to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 from llm_agent_evolution.domain.model import Agent, Chromosome
 from llm_agent_evolution.domain.services import select_parents_pareto, mate_agents
@@ -52,6 +48,7 @@ class UniversalOptimizer:
             script_timeout: Maximum execution time for the evaluation script
             initial_content: Initial content for the chromosomes
             max_chars: Maximum number of characters for chromosomes
+            verbose: Whether to enable verbose output
         """
         # Set random seed if provided
         if random_seed is not None:
@@ -77,12 +74,12 @@ class UniversalOptimizer:
         self.script_timeout = script_timeout
         self.initial_content = initial_content
         self.max_chars = max_chars
+        self.verbose = verbose
         
         # Runtime state
         self.population = []
         self.stop_event = threading.Event()
         self.population_lock = threading.Lock()
-        self.verbose = verbose
     
     def initialize_population(self) -> List[Agent]:
         """Initialize a population with the given size"""
@@ -533,17 +530,104 @@ def progress_bar(current: int, total: Optional[int] = None) -> None:
         sys.stdout.write(f"\rEvaluations: {current}")
     sys.stdout.flush()
 
-def main():
-    """Main entry point for the universal optimizer CLI"""
-    # Set a default timeout for the entire program
-    import signal
-    def timeout_handler(signum, frame):
-        print("\nProgram timeout reached. Exiting.")
-        sys.exit(0)
+def run_optimizer(
+    eval_script: str,
+    population_size: int = 50,
+    parallel_agents: int = 8,
+    max_evaluations: Optional[int] = None,
+    use_mock_llm: bool = False,
+    model_name: str = "openrouter/google/gemini-2.0-flash-001",
+    log_file: str = "universal_optimize.log",
+    random_seed: Optional[int] = None,
+    script_timeout: int = 30,
+    initial_content: str = "",
+    output_file: Optional[str] = None,
+    output_format: str = "text",
+    max_chars: int = 1000,
+    verbose: bool = False
+) -> int:
+    """Run the universal optimizer with the given parameters"""
+    # Check if evaluation script exists
+    if not os.path.exists(eval_script):
+        print(f"Error: Evaluation script not found: {eval_script}")
+        return 1
     
-    # Set a 2-hour timeout by default
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(7200)  # 2 hours in seconds
+    # Make the evaluation script executable if it's not already
+    if not os.access(eval_script, os.X_OK):
+        try:
+            os.chmod(eval_script, os.stat(eval_script).st_mode | 0o111)
+            print(f"Made evaluation script executable: {eval_script}")
+        except Exception as e:
+            print(f"Warning: Could not make evaluation script executable: {e}")
+    
+    # Create and run the optimizer
+    optimizer = UniversalOptimizer(
+        eval_script=eval_script,
+        population_size=population_size,
+        parallel_agents=parallel_agents,
+        use_mock_llm=use_mock_llm,
+        model_name=model_name,
+        log_file=log_file,
+        random_seed=random_seed,
+        script_timeout=script_timeout,
+        initial_content=initial_content,
+        max_chars=max_chars,
+        verbose=verbose
+    )
+    
+    print(f"Starting optimization with {population_size} agents and {parallel_agents} parallel workers")
+    print(f"Evaluation script: {eval_script}")
+    print(f"Using {'mock' if use_mock_llm else 'real'} LLM")
+    print(f"Press Ctrl+C to stop\n")
+    
+    # Run the optimization
+    results = optimizer.run(
+        max_evaluations=max_evaluations,
+        progress_callback=progress_bar
+    )
+    
+    # Print results
+    print("\n\nOptimization completed!")
+    print(f"Total evaluations: {results['evaluations']}")
+    
+    if results['best_agent']:
+        print(f"\nBest agent (ID: {results['best_agent']['id']})")
+        print(f"Reward: {results['best_agent']['reward']}")
+        print("\nContent:")
+        print("=" * 40)
+        print(results['best_agent']['content'])
+        print("=" * 40)
+        
+        # Write to output file if specified
+        if output_file:
+            if output_format == "text":
+                with open(output_file, 'w') as f:
+                    f.write(results['best_agent']['content'])
+            else:  # json
+                with open(output_file, 'w') as f:
+                    json.dump(results, f, indent=2)
+            print(f"\nResults written to {output_file}")
+    else:
+        print("\nNo valid results found")
+    
+    # Print statistics
+    print("\nStatistics:")
+    print(f"Mean reward: {results['stats']['mean']:.2f}")
+    print(f"Median reward: {results['stats']['median']:.2f}")
+    print(f"Standard deviation: {results['stats']['std_dev']:.2f}")
+    
+    # Print cache statistics
+    if 'cache_stats' in results['stats']:
+        cache_stats = results['stats']['cache_stats']
+        print(f"\nCache statistics:")
+        print(f"Size: {cache_stats['size']}/{cache_stats['max_size']}")
+        print(f"Hit ratio: {cache_stats['hit_ratio']:.2f}")
+    
+    return 0
+
+if __name__ == "__main__":
+    # If run directly, use the CLI arguments
+    import argparse
     
     parser = argparse.ArgumentParser(
         description="Universal Optimization CLI - Optimize any text output using script-based evaluation"
@@ -654,92 +738,29 @@ def main():
     
     args = parser.parse_args()
     
-    # Check if evaluation script exists
-    if not os.path.exists(args.eval_script):
-        print(f"Error: Evaluation script not found: {args.eval_script}")
-        return 1
-    
     # Get initial content from file if specified
     initial_content = args.initial_content
     if args.initial_file:
         if not os.path.exists(args.initial_file):
             print(f"Error: Initial content file not found: {args.initial_file}")
-            return 1
+            sys.exit(1)
         with open(args.initial_file, 'r') as f:
             initial_content = f.read()
     
-    # Make the evaluation script executable if it's not already
-    if not os.access(args.eval_script, os.X_OK):
-        try:
-            os.chmod(args.eval_script, os.stat(args.eval_script).st_mode | 0o111)
-            print(f"Made evaluation script executable: {args.eval_script}")
-        except Exception as e:
-            print(f"Warning: Could not make evaluation script executable: {e}")
-    
-    # Create and run the optimizer
-    optimizer = UniversalOptimizer(
+    # Run the optimizer
+    sys.exit(run_optimizer(
         eval_script=args.eval_script,
         population_size=args.population_size,
         parallel_agents=args.parallel_agents,
+        max_evaluations=args.max_evaluations,
         use_mock_llm=args.use_mock_llm,
         model_name=args.model,
         log_file=args.log_file,
         random_seed=args.seed,
         script_timeout=args.script_timeout,
         initial_content=initial_content,
+        output_file=args.output_file,
+        output_format=args.output_format,
         max_chars=args.max_chars,
         verbose=args.verbose
-    )
-    
-    print(f"Starting optimization with {args.population_size} agents and {args.parallel_agents} parallel workers")
-    print(f"Evaluation script: {args.eval_script}")
-    print(f"Using {'mock' if args.use_mock_llm else 'real'} LLM")
-    print(f"Press Ctrl+C to stop\n")
-    
-    # Run the optimization
-    results = optimizer.run(
-        max_evaluations=args.max_evaluations,
-        progress_callback=progress_bar
-    )
-    
-    # Print results
-    print("\n\nOptimization completed!")
-    print(f"Total evaluations: {results['evaluations']}")
-    
-    if results['best_agent']:
-        print(f"\nBest agent (ID: {results['best_agent']['id']})")
-        print(f"Reward: {results['best_agent']['reward']}")
-        print("\nContent:")
-        print("=" * 40)
-        print(results['best_agent']['content'])
-        print("=" * 40)
-        
-        # Write to output file if specified
-        if args.output_file:
-            if args.output_format == "text":
-                with open(args.output_file, 'w') as f:
-                    f.write(results['best_agent']['content'])
-            else:  # json
-                with open(args.output_file, 'w') as f:
-                    json.dump(results, f, indent=2)
-            print(f"\nResults written to {args.output_file}")
-    else:
-        print("\nNo valid results found")
-    
-    # Print statistics
-    print("\nStatistics:")
-    print(f"Mean reward: {results['stats']['mean']:.2f}")
-    print(f"Median reward: {results['stats']['median']:.2f}")
-    print(f"Standard deviation: {results['stats']['std_dev']:.2f}")
-    
-    # Print cache statistics
-    if 'cache_stats' in results['stats']:
-        cache_stats = results['stats']['cache_stats']
-        print(f"\nCache statistics:")
-        print(f"Size: {cache_stats['size']}/{cache_stats['max_size']}")
-        print(f"Hit ratio: {cache_stats['hit_ratio']:.2f}")
-    
-    return 0
-
-if __name__ == "__main__":
-    sys.exit(main())
+    ))

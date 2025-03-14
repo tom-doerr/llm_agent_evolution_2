@@ -1,3 +1,36 @@
 [build-system]
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm_agent_evolution"
+version = "0.1.0"
+description = "LLM Agent Evolution - Evolve LLM agents through natural selection"
+readme = "README.md"
+authors = [
+    {name = "LLM Agent Evolution Team"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "dspy-ai",
+    "numpy",
+    "tqdm",
+    "matplotlib",
+    "rich"
+]
+
+[project.scripts]
+llm-evolve = "llm_agent_evolution.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/llm_agent_evolution"
+"Bug Tracker" = "https://github.com/yourusername/llm_agent_evolution/issues"
