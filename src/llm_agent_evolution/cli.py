@@ -92,7 +92,7 @@ def main():
     )
     
     parser.add_argument(
-        "--load",
+        "--load", "-l",
         type=str,
         default=None,
         help="Load a previously saved agent from file"

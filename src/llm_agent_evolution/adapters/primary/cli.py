@@ -4,6 +4,7 @@ import os
 from typing import List, Dict, Any
 import time
 from llm_agent_evolution.ports.primary import EvolutionUseCase
+from llm_agent_evolution.domain.model import Agent, Chromosome
 
 class CLIAdapter:
     """Command-line interface adapter for the evolution system"""
@@ -66,10 +67,40 @@ class CLIAdapter:
             help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
         )
         
+        # Agent loading and context
+        group_agent = parser.add_argument_group('Agent Loading and Context')
+        group_agent.add_argument(
+            "--load", "-l",
+            type=str,
+            default=None,
+            help="Load a previously saved agent from file"
+        )
+        
+        group_agent.add_argument(
+            "--save", "-o",
+            type=str,
+            default=None,
+            help="File to save the best result to"
+        )
+        
+        group_agent.add_argument(
+            "--context", "-c",
+            type=str,
+            default=None,
+            help="Context to pass to the agent (available as AGENT_CONTEXT environment variable)"
+        )
+        
+        group_agent.add_argument(
+            "--context-file", "-cf",
+            type=str,
+            default=None,
+            help="File containing context to pass to the agent"
+        )
+        
         # Output and logging
         group_output = parser.add_argument_group('Output and Logging')
         group_output.add_argument(
-            "--log-file", "-l",
+            "--log-file",
             type=str, 
             default="evolution.log",
             help="Log file path"
@@ -163,6 +194,13 @@ class CLIAdapter:
             if args.seed is None:
                 args.seed = 42  # Use fixed seed for reproducible tests
         
+        # Get context from stdin if no context is provided
+        if not hasattr(args, 'context'):
+            args.context = None
+            
+        if not hasattr(args, 'context_file'):
+            args.context_file = None
+            
         # Get context from file if specified
         context = args.context
         if args.context_file:
@@ -172,6 +210,14 @@ class CLIAdapter:
             except Exception as e:
                 print(f"Error reading context file: {e}")
                 return 1
+                
+        # Check if we should read from stdin
+        if context is None and not sys.stdin.isatty():
+            try:
+                context = sys.stdin.read()
+                print(f"Read context from stdin: {context[:50]}{'...' if len(context) > 50 else ''}")
+            except Exception as e:
+                print(f"Error reading from stdin: {e}")
         
         try:
             # Show startup banner
@@ -237,7 +283,7 @@ class CLIAdapter:
             
             # Load agent if specified
             initial_population = None
-            if args.load:
+            if hasattr(args, 'load') and args.load:
                 try:
                     import tomli
                     with open(args.load, 'rb') as f:
@@ -308,7 +354,7 @@ class CLIAdapter:
             print("-" * 60)
             
             # Save agent if requested
-            if args.save:
+            if hasattr(args, 'save') and args.save:
                 try:
                     import tomli_w
                     agent_data = {
