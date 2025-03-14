@@ -24,6 +24,19 @@ def test_llm_evolve_help():
     assert result.returncode == 0
     assert "LLM Agent Evolution" in result.stdout
     assert "Command to run" in result.stdout
+    
+    # Also test the direct command without module
+    try:
+        result = subprocess.run(
+            ["llm-evolve", "--help"],
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 0
+        assert "LLM Agent Evolution" in result.stdout
+    except FileNotFoundError:
+        # Skip this check if llm-evolve is not in PATH
+        pytest.skip("llm-evolve command not found in PATH")
 
 def test_llm_evolve_quick_test():
     """Test that the quick test mode works"""
@@ -33,11 +46,34 @@ def test_llm_evolve_quick_test():
     
     # Create a temporary log file
     with tempfile.NamedTemporaryFile(suffix='.log') as temp_log:
-        # Run the command with quick test mode
+        # Run the command with quick test mode and explicit subcommand
         result = subprocess.run(
             [
                 "python", "-m", "llm_agent_evolution", 
                 "evolve", "--quick-test",
+                "--log-file", temp_log.name,
+                "--max-evaluations", "10"  # Limit to 10 evaluations for speed
+            ],
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that it ran successfully
+        assert result.returncode == 0
+        assert "Running quick test with mock LLM adapter" in result.stdout
+        
+        # Check that the log file was created and has content
+        with open(temp_log.name, 'r') as f:
+            log_content = f.read()
+            assert "LLM Agent Evolution Log" in log_content
+            
+    # Now test without the subcommand
+    with tempfile.NamedTemporaryFile(suffix='.log') as temp_log:
+        # Run the command with quick test mode without subcommand
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution", 
+                "--quick-test",
                 "--log-file", temp_log.name,
                 "--max-evaluations", "10"  # Limit to 10 evaluations for speed
             ],

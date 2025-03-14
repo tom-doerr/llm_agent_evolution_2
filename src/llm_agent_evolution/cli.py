@@ -7,13 +7,13 @@ import argparse
 
 def main():
     """Main CLI entry point"""
-    # Ensure argparse is properly imported at the top of the file
     parser = argparse.ArgumentParser(
         description="LLM Agent Evolution - Command Line Interface",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
     # Create subparsers for different commands
+    # Make command optional so we can run without specifying a subcommand
     subparsers = parser.add_subparsers(dest="command", help="Command to run", required=False)
     
     # Add the main arguments to the top-level parser as well
@@ -353,9 +353,9 @@ def main():
     # If no command is provided, default to evolve
     if not args.command:
         args.command = "evolve"
-        # Copy any top-level arguments to the evolve namespace
         # This allows running without the explicit 'evolve' subcommand
-        
+        # No need to copy arguments since we're using the same namespace
+    
     if args.command == "evolve":
         # Import and run the main application
         from llm_agent_evolution.application import create_application

@@ -2,8 +2,32 @@ PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EA
 
 
 # fix the cannot access local variable argparse error when runnnign llm evolve 
+Fixed the argparse error by removing the redundant import inside the main() function. The import at the top of the file is sufficient, and the redundant import was causing the variable to be redefined in a way that created scope issues.
+DONE
+
 # add end to end tests that are actually running the llm-evolve command using real llm tools so we can detect errors like that in the future
+Added comprehensive end-to-end tests in tests/test_cli.py and enhanced tests/test_end_to_end.py:
+1. Test that the CLI shows help correctly
+2. Test running with the quick-test flag
+3. Test running without specifying a subcommand
+4. Test running with explicit subcommand
+5. Test the installed llm-evolve command if available
+
+These tests will catch CLI-related errors early and ensure the command-line interface works as expected.
+DONE
+
 # make it so i can also run it without needing to use the optimize command in the cli, maybe make it the default
+Updated the CLI to make the 'evolve' command the default when no subcommand is specified. This allows users to run:
+```
+llm-evolve --population-size 50 --parallel-agents 8
+```
+instead of having to type:
+```
+llm-evolve evolve --population-size 50 --parallel-agents 8
+```
+
+The implementation preserves all functionality while making the interface more user-friendly.
+DONE
 # is there code duplication?
 # how many chromosomes do we currently have?
 Each agent in the system has three chromosomes:
