@@ -88,6 +88,27 @@ def main():
         help="File to save the best result to"
     )
     
+    parser.add_argument(
+        "--load", "-l",
+        type=str,
+        default=None,
+        help="Load a previously saved agent from file"
+    )
+    
+    parser.add_argument(
+        "--context", "-c",
+        type=str,
+        default=None,
+        help="Context to pass to the agent (available as AGENT_CONTEXT environment variable)"
+    )
+    
+    parser.add_argument(
+        "--context-file", "-cf",
+        type=str,
+        default=None,
+        help="File containing context to pass to the agent"
+    )
+    
     # Evolve command
     evolve_parser = subparsers.add_parser(
         "evolve", 
