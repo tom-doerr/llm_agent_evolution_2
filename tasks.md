@@ -1,6 +1,23 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+# please reduce the size of tasks.md, maybe summarize the text below done items don't edit the headings! don't edit not done headings!
+# remove duplicate code
+# should we refactor?
+# what evolution aspects are simplified in our implementation?
+# how many llm calls do we make during testing in total?
+# reduce readme size a lot
+# please remove the split between optimize, standalone, .... and unify them and the functionality
+# loading agents works with toml right? 
+# please add e2e tests for running inference with a loaded toml agent 
+# add e2e test for optimizing with stdin input
+# are we parallelizing evolution for the e2e tests? please do so they are slow
+
+
+
+
+
+=============================================================================================
 
 # please merge the universal optimize readme with the main readme
 Merged the Universal Optimizer README content into the main README.md file. Added sections on:
@@ -78,15 +95,6 @@ We can further reduce the project size by:
 
 These changes would make the codebase more maintainable while reducing its size.
 DONE
-# please reduce the size of tasks.md, maybe summarize the text below done items don't edit the headings! don't edit not done headings!
-# remove duplicate code
-# should we refactor?
-# what evolution aspects are simplified in our implementation?
-# how many llm calls do we make during testing in total?
-
-
-
-
 
 
 
