@@ -19,6 +19,30 @@ def main():
     _add_standalone_subparser(subparsers)
     _add_demo_subparser(subparsers)
     
+    # Parse arguments and handle commands
+    args = parser.parse_args()
+    
+    # Handle default command
+    if not args.command:
+        args.command = "evolve"
+        # This allows running without the explicit 'evolve' subcommand
+    
+    # Remove subcommand from sys.argv if it's 'evolve' to avoid unrecognized argument error
+    if args.command == "evolve" and len(sys.argv) > 1 and sys.argv[1] == "evolve":
+        sys.argv.remove("evolve")
+    
+    # Dispatch to the appropriate command handler
+    if args.command == "evolve":
+        return _handle_evolve_command(args)
+    elif args.command == "optimize":
+        return _handle_optimize_command(args)
+    elif args.command == "standalone":
+        return _handle_standalone_command(args)
+    elif args.command == "demo":
+        return _handle_demo_command(args)
+    else:
+        parser.print_help()
+        return 1
 def _create_main_parser():
     """Create the main argument parser"""
     parser = argparse.ArgumentParser(

@@ -328,6 +328,9 @@ class CLIAdapter:
                             reward = self.evolution_use_case.evaluate_agent(loaded_agent)
                             print(f"\nAgent evaluation complete")
                             print(f"Reward: {reward}")
+                            
+                            # For testing purposes, print the agent's task chromosome content
+                            print(f"\nAgent output: {loaded_agent.task_chromosome.content}")
                             return 0
                 except Exception as e:
                     print(f"Error loading agent: {e}")
