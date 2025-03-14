@@ -1,6 +1,8 @@
-# evaluate opportunities for reducing repo size
-# should we split up the large file in the repo?
-# do we have a proper cli tool when installing the package?
+# DONE: evaluate opportunities for reducing repo size
+# DONE: split up the large file in the repo (universal_optimize.py)
+# DONE: ensure proper CLI tool when installing the package
+# DONE: make sure command evaluation works properly
+# DONE: reduce output in CLI tool when using verbose mode
 # make readme more compact and add usage examples
 # remove visualization code
 # remove streamlit apps
