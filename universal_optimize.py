@@ -142,6 +142,10 @@ class UniversalOptimizer:
         mutation_instructions = agent.mutation_chromosome.content
         
         try:
+            # Ensure mutation_instructions is a string
+            if not isinstance(mutation_instructions, str):
+                mutation_instructions = str(mutation_instructions)
+            
             # Mutate each chromosome
             task_chromosome = self.llm_adapter.generate_mutation(
                 agent.task_chromosome, 
@@ -672,10 +676,11 @@ def main():
     print(f"Standard deviation: {results['stats']['std_dev']:.2f}")
     
     # Print cache statistics
-    cache_stats = results['stats']['cache_stats']
-    print(f"\nCache statistics:")
-    print(f"Size: {cache_stats['size']}/{cache_stats['max_size']}")
-    print(f"Hit ratio: {cache_stats['hit_ratio']:.2f}")
+    if 'cache_stats' in results['stats']:
+        cache_stats = results['stats']['cache_stats']
+        print(f"\nCache statistics:")
+        print(f"Size: {cache_stats['size']}/{cache_stats['max_size']}")
+        print(f"Hit ratio: {cache_stats['hit_ratio']:.2f}")
     
     return 0
 
