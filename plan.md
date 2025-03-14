@@ -1,55 +1,65 @@
-# Universal Optimization Framework: Implementation Plan
+# LLM Agent Evolution: Implementation Plan
 
 ## Vision
-Create a universal optimization framework that can evolve text-based outputs against any measurable goal using script-based evaluation.
+Create a flexible, powerful framework for evolving LLM-based agents through evolutionary algorithms that can optimize for any measurable goal.
 
 ## Core Principles
 1. **Universal Adaptability**: Optimize for any goal expressible as a numerical reward
-2. **Unix Philosophy**: Simple, composable tools that work with existing ecosystems
+2. **Simplicity First**: Keep the core system simple and understandable
 3. **Minimal Assumptions**: Domain-agnostic design with few built-in constraints
 4. **Evolutionary Intelligence**: System evolves its strategies over time
 
 ## Architecture Overview
 
-### 1. Script-Based Evaluation Interface
-- External scripts receive agent output via stdin
-- Scripts return numerical reward as their last line of output
+### 1. Command-Based Evaluation Interface
+- External commands receive agent output via stdin
+- Commands return numerical reward as their last line of output
 - Support for any programming language or evaluation method
 - Caching mechanism for efficiency
 
-### 2. Flexible Chromosome System
-- Dynamic chromosome types that can evolve during optimization
-- Support for different chromosome representations
-- Chromosome combination strategies that adapt to the problem
+### 2. Three-Chromosome System
+- Task chromosome: The output that gets evaluated
+- Mate selection chromosome: Instructions for selecting mates
+- Mutation chromosome: Instructions for how to mutate chromosomes
 
-### 3. Evolutionary Strategy Market
-- Multiple evolutionary strategies competing for effectiveness
-- Strategy adaptation based on performance
-- Maintenance of strategy diversity
+### 3. Continuous Evolution Process
+- No discrete generations
+- Parent selection using Pareto distribution weighted by fitness^2
+- Weighted sampling without replacement
+- Chromosome combination at hotspots (punctuation, spaces)
 
 ### 4. Universal CLI
 - Simple interface for running optimizations
 - Support for different output formats
 - Integration with existing tools and workflows
+- Real-time monitoring and visualization
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Core Framework (Current)
-- [x] Script-based evaluation interface
-- [x] Basic evolutionary algorithm
+### Completed Features
+- [x] Command-based evaluation interface
+- [x] Three-chromosome system
+- [x] Continuous evolution process
 - [x] Universal CLI
 - [x] Logging and visualization
+- [x] Multithreading support
+- [x] Mock LLM for testing
+- [x] Caching for evaluation efficiency
+- [x] Statistics tracking
+- [x] Real-time dashboard
 
-### Phase 2: Advanced Features
+### In Progress
+- [ ] Improved chromosome initialization
+- [ ] Better verbose output formatting
+- [ ] More example evaluation scripts
+- [ ] Documentation improvements
+
+### Planned Features
 - [ ] Strategy market implementation
 - [ ] Dynamic chromosome adaptation
 - [ ] Cross-domain knowledge transfer
 - [ ] Performance optimizations
-
-### Phase 3: Ecosystem Development
-- [ ] Strategy sharing mechanism
-- [ ] Evaluation script library
-- [ ] Integration with popular tools
+- [ ] Integration with more LLM providers
 - [ ] Community contribution framework
 
 ## Use Cases
@@ -62,17 +72,18 @@ Create a universal optimization framework that can evolve text-based outputs aga
 ## Technical Components
 
 ### Core Components
-- Script Execution Engine
+- Command Execution Engine
 - Evolutionary Algorithm
 - Chromosome Management
-- Strategy Selection
 - Result Visualization
+- Real-time Dashboard
 
 ### Supporting Components
 - Caching System
 - Parallel Execution
 - Security Sandbox
 - Persistence Layer
+- Statistics Tracking
 
 ## Success Metrics
 - Adaptability across different domains
@@ -81,8 +92,8 @@ Create a universal optimization framework that can evolve text-based outputs aga
 - Community adoption and contribution
 
 ## Immediate Next Steps
-1. Implement script-based evaluation interface
-2. Create universal CLI
-3. Develop basic evolutionary algorithm
-4. Add logging and visualization
-5. Create examples for different use cases
+1. Refactor universal_optimize.py into smaller modules
+2. Improve chromosome initialization to avoid task leakage
+3. Enhance verbose output to show full chromosomes
+4. Create more example evaluation scripts
+5. Improve documentation and tutorials

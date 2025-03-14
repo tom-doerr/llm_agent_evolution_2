@@ -87,13 +87,14 @@ class UniversalOptimizer:
         
         # Create initial agents with meaningful chromosomes
         for _ in range(self.population_size):
-            # Initial task chromosome with some content
+            # Initial task chromosome with empty content
             task_content = self.initial_content if self.initial_content else ""
             
             # Initial mate selection chromosome with instructions
             mate_selection_content = """
             Select the mate with the highest reward.
             If rewards are equal, choose the one with more diverse content.
+            Consider both reward and content diversity.
             """
             
             # Initial mutation chromosome with instructions
@@ -101,6 +102,7 @@ class UniversalOptimizer:
             Improve the content to maximize the evaluation score.
             Try different approaches and patterns.
             Keep the content concise and focused.
+            Experiment with different structures.
             """
             
             agent = Agent(
@@ -226,44 +228,59 @@ class UniversalOptimizer:
                 
                 # Verbose output for parent selection and mating
                 if self.verbose:
-                    print("\n" + "=" * 40)
+                    print("\n" + "=" * 60)
                     print(f"EVOLUTION STEP")
-                    print("=" * 40)
+                    print("=" * 60)
                     print("\n1. PARENT SELECTION")
                     print(f"Parent 1 (ID: {parent1.id}):")
                     print(f"Reward: {parent1.reward}")
-                    print(f"Task: '{parent1.task_chromosome.content[:50]}{'...' if len(parent1.task_chromosome.content) > 50 else ''}'")
-                    print(f"Mate Selection: '{parent1.mate_selection_chromosome.content[:50]}{'...' if len(parent1.mate_selection_chromosome.content) > 50 else ''}'")
-                    print(f"Mutation: '{parent1.mutation_chromosome.content[:50]}{'...' if len(parent1.mutation_chromosome.content) > 50 else ''}'")
-                    
+                    print(f"Task Chromosome:")
+                    print(f"{parent1.task_chromosome.content}")
+                    print(f"\nMate Selection Chromosome:")
+                    print(f"{parent1.mate_selection_chromosome.content}")
+                    print(f"\nMutation Chromosome:")
+                    print(f"{parent1.mutation_chromosome.content}")
+        
                     print(f"\nParent 2 (ID: {parent2.id}):")
                     print(f"Reward: {parent2.reward}")
-                    print(f"Task: '{parent2.task_chromosome.content[:50]}{'...' if len(parent2.task_chromosome.content) > 50 else ''}'")
-                    print(f"Mate Selection: '{parent2.mate_selection_chromosome.content[:50]}{'...' if len(parent2.mate_selection_chromosome.content) > 50 else ''}'")
-                    print(f"Mutation: '{parent2.mutation_chromosome.content[:50]}{'...' if len(parent2.mutation_chromosome.content) > 50 else ''}'")
+                    print(f"Task Chromosome:")
+                    print(f"{parent2.task_chromosome.content}")
+                    print(f"\nMate Selection Chromosome:")
+                    print(f"{parent2.mate_selection_chromosome.content}")
+                    print(f"\nMutation Chromosome:")
+                    print(f"{parent2.mutation_chromosome.content}")
                     
                     print("\n2. MATING")
                     print(f"New agent after mating (ID: {new_agent.id}):")
-                    print(f"Task: '{new_agent.task_chromosome.content[:50]}{'...' if len(new_agent.task_chromosome.content) > 50 else ''}'")
-                    print(f"Mate Selection: '{new_agent.mate_selection_chromosome.content[:50]}{'...' if len(new_agent.mate_selection_chromosome.content) > 50 else ''}'")
-                    print(f"Mutation: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
+                    print(f"Task Chromosome:")
+                    print(f"{new_agent.task_chromosome.content}")
+                    print(f"\nMate Selection Chromosome:")
+                    print(f"{new_agent.mate_selection_chromosome.content}")
+                    print(f"\nMutation Chromosome:")
+                    print(f"{new_agent.mutation_chromosome.content}")
                 
                 # Mutate the new agent
                 if self.verbose:
                     print("\n3. MUTATION")
                     print(f"Mutation instructions: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
                     print(f"Before mutation:")
-                    print(f"Task: '{new_agent.task_chromosome.content[:50]}{'...' if len(new_agent.task_chromosome.content) > 50 else ''}'")
-                    print(f"Mate Selection: '{new_agent.mate_selection_chromosome.content[:50]}{'...' if len(new_agent.mate_selection_chromosome.content) > 50 else ''}'")
-                    print(f"Mutation: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
+                    print(f"Task Chromosome:")
+                    print(f"{new_agent.task_chromosome.content}")
+                    print(f"\nMate Selection Chromosome:")
+                    print(f"{new_agent.mate_selection_chromosome.content}")
+                    print(f"\nMutation Chromosome:")
+                    print(f"{new_agent.mutation_chromosome.content}")
                 
                 mutated_agent = self.mutate_agent(new_agent)
                 
                 if self.verbose:
                     print(f"After mutation:")
-                    print(f"Task: '{mutated_agent.task_chromosome.content[:50]}{'...' if len(mutated_agent.task_chromosome.content) > 50 else ''}'")
-                    print(f"Mate Selection: '{mutated_agent.mate_selection_chromosome.content[:50]}{'...' if len(mutated_agent.mate_selection_chromosome.content) > 50 else ''}'")
-                    print(f"Mutation: '{mutated_agent.mutation_chromosome.content[:50]}{'...' if len(mutated_agent.mutation_chromosome.content) > 50 else ''}'")
+                    print(f"Task Chromosome:")
+                    print(f"{mutated_agent.task_chromosome.content}")
+                    print(f"\nMate Selection Chromosome:")
+                    print(f"{mutated_agent.mate_selection_chromosome.content}")
+                    print(f"\nMutation Chromosome:")
+                    print(f"{mutated_agent.mutation_chromosome.content}")
                 
                 # Evaluate the agent
                 if self.verbose:
