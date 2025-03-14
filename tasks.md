@@ -1,6 +1,27 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+
+# please merge the universal optimize readme with the main readme
+# hmm can we rename output file arg to save?
+# output format seems like bloat, please standardise to toml
+# why do we have so many commands for llm-evolve? i just want the command as string argument for optimization functionality
+# add --load argument for loading a saved agent
+# add support for stdin into an agent
+# how can we further reduce project size? 
+# please reduce the size of tasks.md, maybe summarize the text below done items don't edit the headings! don't edit not done headings!
+# remove duplicate code
+# should we refactor?
+# what evolution aspects are simplified in our implementation?
+# how many llm calls do we make during testing in total?
+
+
+
+
+
+
+
+=============================================================================================
 # is plan.md up to date? is it valuable or should we remove it?
 Plan.md is somewhat outdated and doesn't fully reflect the current architecture. While it provides a high-level overview, it contains references to features that have been removed (like visualization) and doesn't accurately describe the current CLI structure. Consider removing it or updating it to match the current implementation.
 
@@ -37,31 +58,6 @@ Current chromosome initial values:
 3. Mutation chromosome: "Improve the content to maximize the evaluation score..."
 
 These values are set in initialize_population() in both EvolutionService and UniversalOptimizer.
-
-# please merge the universal optimize readme with the main readme
-# hmm can we rename output file arg to save?
-# output format seems like bloat, please standardise to toml
-# why do we have so many commands for llm-evolve? i just want the command as string argument for optimization functionality
-# add --load argument for loading a saved agent
-# add support for stdin into an agent
-# how can we further reduce project size? 
-# please reduce the size of tasks.md, maybe summarize the text below done items don't edit the headings! don't edit not done headings!
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 =============================================================================================
