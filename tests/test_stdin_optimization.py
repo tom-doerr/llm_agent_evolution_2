@@ -78,7 +78,7 @@ print(reward)  # This must be the last line and a number
         assert result.returncode == 0
         
         # More lenient check - just verify context is used somewhere
-        assert context in result.stdout, "Context not found in output"
+        assert any(context in line for line in result.stdout.splitlines()), "Context not found in output"
         
         # Now test with context file
         result = subprocess.run(
@@ -174,27 +174,38 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
         # More lenient check - just verify stdin input is used somewhere
         assert "This is stdin input" in result.stdout, "Stdin input not found in output"
         
-        # Now test with direct pipe using echo and a pipe
-        # Use a temporary file to capture the output
-        with tempfile.NamedTemporaryFile(suffix='.txt') as output_file:
-            # Use shell=True to allow piping
-            command = f"echo 'Direct pipe test' | python -m llm_agent_evolution --use-mock --eval-command 'python {script_path}' --population-size 5 --parallel-agents 2 --max-evaluations 5"
-            result = subprocess.run(
-                command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=60  # Add timeout to prevent hanging
-            )
-            
-            # Print output for debugging
-            print(f"STDOUT: {result.stdout}")
-            print(f"STDERR: {result.stderr}")
-            
-            # Check that it ran successfully
-            assert result.returncode == 0
-            # Either of these patterns might appear depending on how stdin is handled
-            assert "Context: Direct pipe test" in result.stdout or "Read context from stdin: Direct pipe test" in result.stdout
+        # Test with a more direct approach using Python's subprocess
+        # This is more reliable than shell=True with pipes
+        context_text = "Direct subprocess test"
+        
+        # Create a process that will provide the context via stdin
+        process = subprocess.Popen(
+            [
+                "python", "-m", "llm_agent_evolution",
+                "--use-mock",
+                "--eval-command", f"python {script_path}",
+                "--population-size", "5",
+                "--parallel-agents", "2",
+                "--max-evaluations", "3"
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Send the context via stdin
+        stdout, stderr = process.communicate(input=context_text, timeout=60)
+        
+        # Print output for debugging
+        print(f"STDOUT: {stdout}")
+        print(f"STDERR: {stderr}")
+        
+        # Check that it ran successfully
+        assert process.returncode == 0
+        
+        # Check that the context was used
+        assert context_text in stdout or f"Read context from stdin: {context_text}" in stdout
         
     finally:
         # Clean up

@@ -4,6 +4,7 @@ Quick test module for LLM Agent Evolution
 import sys
 import os
 import argparse
+import tempfile
 from .application import create_application
 
 def main(seed=42):
@@ -16,8 +17,11 @@ def main(seed=42):
     if seed:
         os.environ["RANDOM_SEED"] = str(seed)
     
+    # Create a valid log file path in a directory that should be writable
+    log_file = os.path.join(tempfile.gettempdir(), "quick_test.log")
+    
     # Create application with mock adapter
-    cli = create_application(use_mock=True, random_seed=seed)
+    cli = create_application(use_mock=True, random_seed=seed, log_file=log_file)
     
     # Override arguments for quick test
     args = argparse.Namespace()

@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 import shutil
+import time
 
 # Add the src directory to the path so we can import the package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
@@ -49,10 +50,9 @@ def test_llm_evolve_quick_test():
     if os.environ.get('CI') == 'true':
         pytest.skip("Skipping test that requires CLI in CI environment")
     
-    # Create a temporary log file
-    with tempfile.NamedTemporaryFile(suffix='.log', delete=False) as temp_log:
-        log_path = temp_log.name
-        
+    # Use a fixed path in the temp directory
+    log_path = os.path.join(tempfile.gettempdir(), f"llm_evolve_test_{int(time.time())}.log")
+    
     try:
         # Run the command with quick test mode without explicit subcommand
         result = subprocess.run(

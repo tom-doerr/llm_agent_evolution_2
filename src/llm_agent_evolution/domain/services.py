@@ -199,17 +199,21 @@ def _perform_crossover(primary_content: str, secondary_content: str, hotspots: L
     result = list(primary_content)
     
     # Calculate target number of switches - aim for ~1 switch per chromosome
+    # This ensures we have on average one chromosome jump per chromosome as specified
     target_switches = 1
     
     # Sort hotspots and select a subset for switching
     hotspots.sort()
     if hotspots:
-        # Select random hotspots for switching
-        switch_points = sorted(random.sample(hotspots, min(target_switches, len(hotspots))))
+        # Select random hotspots for switching - ensure at least one switch point
+        # to guarantee chromosome jumps happen
+        num_switch_points = max(1, min(target_switches, len(hotspots)))
+        switch_points = sorted(random.sample(hotspots, num_switch_points))
         
-        # Perform the switches
+        # Perform the switches - always do at least one switch
         for point in switch_points:
-            if random.random() < CHROMOSOME_SWITCH_PROBABILITY:
+            # Increased probability to ensure we get switches
+            if random.random() < CHROMOSOME_SWITCH_PROBABILITY or point == switch_points[0]:
                 # Take content from secondary parent from this point
                 if point < len(secondary_content):
                     secondary_content_list = list(secondary_content[point:])

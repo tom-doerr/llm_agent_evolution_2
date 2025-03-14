@@ -111,16 +111,48 @@ class DSPyLLMAdapter(LLMPort):
     def _parse_mate_selection(self, response_text: str, candidates: List[Agent]) -> Agent:
         """Parse the mate selection response"""
         try:
-            # Parse the response to get the selected candidate index
+            # First try to parse as a direct number
             selection = int(response_text.strip()) - 1
             if 0 <= selection < len(candidates):
                 return candidates[selection]
-            else:
-                # If invalid selection, return a random candidate
-                import random
-                return random.choice(candidates)
-        except (ValueError, TypeError):
-            # If parsing fails, return a random candidate
+                
+            # If out of range, try to find any number in the response
+            import re
+            numbers = re.findall(r'\b(\d+)\b', response_text)
+            for num in numbers:
+                idx = int(num) - 1
+                if 0 <= idx < len(candidates):
+                    return candidates[idx]
+                    
+            # If still no valid selection, use a weighted approach based on rewards
+            if candidates:
+                # Weight by reward (with a minimum weight to avoid zero probabilities)
+                weights = [max(0.1, c.reward) if c.reward is not None else 0.1 for c in candidates]
+                total = sum(weights)
+                if total > 0:
+                    # Normalize weights
+                    weights = [w/total for w in weights]
+                    # Select based on weights
+                    import random
+                    return random.choices(candidates, weights=weights, k=1)[0]
+                
+            # Fallback to random selection
+            import random
+            return random.choice(candidates)
+        except (ValueError, TypeError, IndexError):
+            # If parsing fails, use a weighted approach
+            if candidates:
+                # Weight by reward (with a minimum weight to avoid zero probabilities)
+                weights = [max(0.1, c.reward) if c.reward is not None else 0.1 for c in candidates]
+                total = sum(weights)
+                if total > 0:
+                    # Normalize weights
+                    weights = [w/total for w in weights]
+                    # Select based on weights
+                    import random
+                    return random.choices(candidates, weights=weights, k=1)[0]
+            
+            # Fallback to random selection
             import random
             return random.choice(candidates)
     

@@ -105,12 +105,14 @@ class EvolutionService(EvolutionUseCase):
     
     def add_to_population(self, population: List[Agent], agent: Agent) -> List[Agent]:
         """Add an agent to the population, maintaining population constraints"""
+        from .domain.model import MAX_POPULATION_SIZE
+        
         with self.population_lock:
             # Add the new agent
             population.append(agent)
             
             # If population exceeds limit, remove the worst agent
-            if len(population) > 1000000:  # MAX_POPULATION_SIZE
+            if len(population) > MAX_POPULATION_SIZE:
                 # Sort by reward (None rewards are treated as worst)
                 sorted_population = sorted(
                     population,
@@ -118,7 +120,7 @@ class EvolutionService(EvolutionUseCase):
                     reverse=True
                 )
                 # Keep only the top agents
-                population = sorted_population[:1000000]  # MAX_POPULATION_SIZE
+                population = sorted_population[:MAX_POPULATION_SIZE]
         
         return population
     

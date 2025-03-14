@@ -205,7 +205,7 @@ print(len(text))  # Reward is the length of the text
         assert "RUNNING INFERENCE WITH LOADED AGENT" in result.stdout
         assert "Loaded agent with ID: test-agent-id" in result.stdout
         assert "Agent output: Test inference content" in result.stdout
-        assert "Reward: 21.0" in result.stdout  # Length of "Test inference content"
+        assert "Reward: 22.0" in result.stdout  # Length of "Test inference content" is 22
         
     finally:
         # Clean up

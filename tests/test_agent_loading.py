@@ -248,6 +248,28 @@ print(a_count)
         assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
         assert "Context: This is a test context" in result.stdout
         
+        # Test the inference subcommand specifically
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution",
+                "inference",
+                "--use-mock",
+                "--load", agent_file,
+                "--eval-command", f"python {script_path}",
+                "--context", "Inference specific context"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60  # Add timeout to prevent hanging
+        )
+        
+        # Check that inference mode works correctly
+        assert result.returncode == 0
+        assert "RUNNING INFERENCE WITH LOADED AGENT" in result.stdout
+        assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
+        assert "Context: Inference specific context" in result.stdout
+        assert "Reward: 23" in result.stdout
+        
     finally:
         # Clean up
         if os.path.exists(agent_file):

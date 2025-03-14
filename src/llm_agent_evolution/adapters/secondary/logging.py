@@ -26,12 +26,19 @@ class FileLoggingAdapter(LoggingPort):
                 f.write(f"# LLM Agent Evolution Log - Started at {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                 f.write(f"# This log contains detailed information about the evolution process\n")
                 f.write(f"# Format: timestamp | event_type | details\n\n")
+            
+            # Force flush to disk
+            os.fsync(f.fileno())
                 
             # Verify the file was created
             if not os.path.exists(self.log_file):
                 print(f"Error: Log file {self.log_file} was not created")
             elif os.path.getsize(self.log_file) == 0:
-                print(f"Warning: Log file {self.log_file} was created but is empty")
+                # Try again with a different approach
+                with open(self.log_file, 'w') as f:
+                    f.write(f"# LLM Agent Evolution Log - Started at {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                    f.flush()
+                    os.fsync(f.fileno())
                 
             print(f"Log initialized at: {self.log_file}")
         except Exception as e:

@@ -123,6 +123,9 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
         env = os.environ.copy()
         if context:
             env['AGENT_CONTEXT'] = context
+        elif 'AGENT_CONTEXT' in os.environ:
+            # Preserve existing context from environment
+            env['AGENT_CONTEXT'] = os.environ['AGENT_CONTEXT']
             
         try:
             # Run the script with the output as stdin
