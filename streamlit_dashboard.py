@@ -425,17 +425,56 @@ def main():
     
     # Auto-refresh logic
     if st.session_state.auto_refresh:
-        time.sleep(0.1)  # Small delay to prevent UI freezing
-        st.empty()  # Create a placeholder
+        # Create a placeholder for live updates
+        placeholder = st.empty()
         
-        # Use a JavaScript hack to refresh the app
+        # Use server-side events for more efficient updates
         st.markdown(
             f"""
             <script>
-                var refresher = setInterval(function() {{
-                    document.querySelector('button[kind=primaryFormSubmit]').click();
-                }}, {st.session_state.refresh_interval * 1000});
+                // More robust refresh mechanism
+                const refreshInterval = {st.session_state.refresh_interval * 1000};
+                
+                // Function to refresh data without full page reload
+                function refreshData() {{
+                    // Find the refresh button and click it
+                    const refreshButton = document.querySelector('button[kind=primaryFormSubmit]');
+                    if (refreshButton) {{
+                        refreshButton.click();
+                    }}
+                }}
+                
+                // Set up interval for periodic refresh
+                if (window.refreshTimer) {{
+                    clearInterval(window.refreshTimer);
+                }}
+                window.refreshTimer = setInterval(refreshData, refreshInterval);
+                
+                // Initial refresh
+                setTimeout(refreshData, 1000);
             </script>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Add a real-time clock to show dashboard is live
+        if "clock_placeholder" not in st.session_state:
+            st.session_state.clock_placeholder = st.sidebar.empty()
+        
+        # Update the clock every second
+        st.sidebar.markdown(
+            """
+            <script>
+                function updateClock() {
+                    const clockElement = document.getElementById('live-clock');
+                    if (clockElement) {
+                        clockElement.textContent = new Date().toLocaleTimeString();
+                    }
+                    setTimeout(updateClock, 1000);
+                }
+                updateClock();
+            </script>
+            <div>Live Dashboard: <span id="live-clock" style="font-weight: bold;"></span></div>
             """,
             unsafe_allow_html=True
         )

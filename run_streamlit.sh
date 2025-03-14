@@ -2,7 +2,7 @@
 # Run the Streamlit dashboard on a non-standard port
 
 # Default port (non-standard)
-PORT=8501
+PORT=8765
 if [ ! -z "$1" ]; then
     PORT=$1
 fi
