@@ -74,3 +74,8 @@ def test_mock_evaluate_task_output():
     
     mixed_over = "a" * 15 + "b" * 15
     assert adapter.evaluate_task_output(mixed_over) == 15 - 7  # 15 'a's, 7 chars over limit
+    
+    # Test with command-based evaluation
+    adapter.eval_command = "echo 42"
+    result = adapter.evaluate_task_output("test")
+    assert result == 42.0

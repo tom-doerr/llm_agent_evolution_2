@@ -3,9 +3,14 @@ import sys
 import os
 import subprocess
 import tempfile
+import shutil
 
 # Add the src directory to the path so we can import the package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
+def is_command_available(command):
+    """Check if a command is available on the system"""
+    return shutil.which(command) is not None
 
 def test_cli_help():
     """Test that the CLI shows help"""
@@ -25,6 +30,16 @@ def test_cli_help():
     assert "LLM Agent Evolution" in result.stdout
     assert "--population-size" in result.stdout
     assert "--parallel-agents" in result.stdout
+    
+    # Also test the installed command if available
+    if is_command_available("llm-evolve"):
+        result = subprocess.run(
+            ["llm-evolve", "--help"],
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 0
+        assert "LLM Agent Evolution" in result.stdout
 
 def test_cli_quick_test():
     """Test that the quick test mode works"""

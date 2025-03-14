@@ -27,7 +27,7 @@ Added comprehensive end-to-end tests in tests/test_cli.py and enhanced tests/tes
 4. Test running with explicit subcommand
 5. Test the installed llm-evolve command if available
 
-These tests will catch CLI-related errors early and ensure the command-line interface works as expected.
+These tests now use a proper check for command availability using shutil.which() instead of try/except with FileNotFoundError, making them more reliable across different environments. The tests will catch CLI-related errors early and ensure the command-line interface works as expected.
 DONE
 
 # make it so i can also run it without needing to use the optimize command in the cli, maybe make it the default
@@ -211,6 +211,8 @@ All tests are now passing. Fixed issues:
 - Fixed CLI import issue by removing redundant import
 - Added proper return type annotation to run_evolution_demo
 - Fixed mock LLM adapter to properly implement the hidden goal evaluation
+- Enhanced mock LLM adapter to handle command-based evaluation properly
+- Improved test reliability by using shutil.which() to check for command availability
 DONE
 
 # if universal optimize is part of the package why is the file outside the package strucutre? are there other files?
@@ -270,6 +272,7 @@ build-backend = "setuptools.build_meta"
 ```
 
 This will fix the installation error.
+DONE
 
 # add more integration tests using real llm calls
 We should add integration tests that use real LLM calls to verify the full system works correctly:

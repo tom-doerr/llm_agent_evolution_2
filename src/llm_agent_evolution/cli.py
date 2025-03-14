@@ -370,7 +370,6 @@ def main():
         )
         
         # Override arguments
-        import argparse
         cli_args = argparse.Namespace()
         cli_args.population_size = args.population_size
         cli_args.parallel_agents = args.parallel_agents

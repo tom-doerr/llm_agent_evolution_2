@@ -3,9 +3,14 @@ import sys
 import os
 import subprocess
 import tempfile
+import shutil
 
 # Add the src directory to the path so we can import the package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
+def is_command_available(command):
+    """Check if a command is available on the system"""
+    return shutil.which(command) is not None
 
 def test_llm_evolve_help():
     """Test that the llm-evolve command works and shows help"""
@@ -26,7 +31,7 @@ def test_llm_evolve_help():
     assert "Command to run" in result.stdout
     
     # Also test the direct command without module
-    try:
+    if is_command_available("llm-evolve"):
         result = subprocess.run(
             ["llm-evolve", "--help"],
             capture_output=True,
@@ -34,7 +39,7 @@ def test_llm_evolve_help():
         )
         assert result.returncode == 0
         assert "LLM Agent Evolution" in result.stdout
-    except FileNotFoundError:
+    else:
         # Skip this check if llm-evolve is not in PATH
         pytest.skip("llm-evolve command not found in PATH")
 
