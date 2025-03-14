@@ -3,7 +3,11 @@
 Quick test script for LLM Agent Evolution
 """
 import sys
-from src.llm_agent_evolution.application import create_application
+import os
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from llm_agent_evolution.application import create_application
 
 def main():
     """Run a quick test with mock LLM adapter"""

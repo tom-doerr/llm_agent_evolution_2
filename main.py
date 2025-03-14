@@ -3,7 +3,11 @@
 LLM Agent Evolution - Main entry point
 """
 import sys
-from src.llm_agent_evolution.application import main
+import os
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from llm_agent_evolution.application import main
 
 if __name__ == "__main__":
     sys.exit(main())

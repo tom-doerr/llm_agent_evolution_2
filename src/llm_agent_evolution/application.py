@@ -1,6 +1,7 @@
 import threading
 import time
 import sys
+import os
 import argparse
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor
@@ -271,10 +272,21 @@ def main():
     """Main entry point for the application"""
     # Parse arguments to get model and log file
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--model", default="openrouter/google/gemini-2.0-flash-001")
-    parser.add_argument("--log-file", default="evolution.log")
+    parser.add_argument("--model", default=os.environ.get("MODEL", "openrouter/google/gemini-2.0-flash-001"))
+    parser.add_argument("--log-file", default=os.environ.get("LOG_FILE", "evolution.log"))
     parser.add_argument("--use-mock", action="store_true", help="Use mock LLM adapter for testing")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument("--population-size", type=int, 
+                       default=int(os.environ.get("POPULATION_SIZE", "100")))
+    parser.add_argument("--parallel-agents", type=int, 
+                       default=int(os.environ.get("PARALLEL_AGENTS", "10")))
+    parser.add_argument("--max-evaluations", type=int, 
+                       default=int(os.environ.get("MAX_EVALUATIONS", "0")) or None)
+    
+    # Check if USE_MOCK is set in environment
+    if os.environ.get("USE_MOCK") == "1":
+        os.environ["USE_MOCK"] = "1"
+        parser.set_defaults(use_mock=True)
     
     # Only parse known args to get these values
     args, _ = parser.parse_known_args()
