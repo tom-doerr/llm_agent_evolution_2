@@ -157,8 +157,14 @@ def _combine_task_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chrom
 
 def _calculate_length_fitness(parent1: Chromosome, parent2: Chromosome) -> Tuple[float, float]:
     """Calculate fitness values based on proximity to TARGET_LENGTH"""
-    p1_value = max(0, TARGET_LENGTH - abs(len(parent1.content) - TARGET_LENGTH))
-    p2_value = max(0, TARGET_LENGTH - abs(len(parent2.content) - TARGET_LENGTH))
+    # Calculate how close each parent is to the target length
+    p1_distance = abs(len(parent1.content) - TARGET_LENGTH)
+    p2_distance = abs(len(parent2.content) - TARGET_LENGTH)
+    
+    # Stronger bias toward target length - inverse square of distance
+    p1_value = max(1, (TARGET_LENGTH - p1_distance)**2) if p1_distance <= TARGET_LENGTH else max(1, TARGET_LENGTH / (p1_distance + 1))
+    p2_value = max(1, (TARGET_LENGTH - p2_distance)**2) if p2_distance <= TARGET_LENGTH else max(1, TARGET_LENGTH / (p2_distance + 1))
+    
     return p1_value, p2_value
 
 def _select_primary_parent(parent1: Chromosome, parent2: Chromosome, p1_value: float, p2_value: float) -> Tuple[Chromosome, Chromosome]:

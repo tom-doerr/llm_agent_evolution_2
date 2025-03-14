@@ -237,7 +237,11 @@ class EvolutionService(EvolutionUseCase):
                     
                     # Call progress callback if provided (not too frequently)
                     if progress_callback and time.time() - last_progress_time > 0.5:
-                        progress_callback(current_count)
+                        try:
+                            progress_callback(current_count, max_evaluations)
+                        except TypeError:
+                            # Try with single argument for backward compatibility
+                            progress_callback(current_count)
                         last_progress_time = time.time()
                     
                     # Display stats periodically

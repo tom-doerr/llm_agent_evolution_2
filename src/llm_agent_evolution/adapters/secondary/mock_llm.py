@@ -94,10 +94,7 @@ class MockLLMAdapter(LLMPort):
         # Calculate reward
         reward = a_count - length_penalty
         
-        # Add some noise to make it more realistic
-        noise = random.uniform(-0.2, 0.2)
-        reward = max(0, reward + noise)
-        
+        # No noise for deterministic testing
         # Add a small bonus for diversity in the output
         unique_chars = len(set(output[:23]))
         diversity_bonus = 0
@@ -106,7 +103,8 @@ class MockLLMAdapter(LLMPort):
         if a_count > 0 and unique_chars > 1:
             diversity_bonus = 0.1 * min(unique_chars, 5)
             
-        return reward + diversity_bonus
+        # Round to avoid floating point issues in tests
+        return round(reward + diversity_bonus, 1)
     
     def _evaluate_with_command(self, output: str) -> float:
         """Evaluate using the specified command"""

@@ -22,6 +22,14 @@ from llm_agent_evolution.universal_optimizer_core import UniversalOptimizer
 # Import the core optimizer class
 from llm_agent_evolution.universal_optimizer_core import UniversalOptimizer
 
+def progress_bar(current_count: int, max_count: Optional[int] = None) -> None:
+    """Simple progress bar function"""
+    if max_count:
+        percent = current_count / max_count * 100
+        print(f"Progress: {current_count}/{max_count} ({percent:.1f}%)")
+    else:
+        print(f"Progress: {current_count} evaluations")
+
 def run_optimizer(
     eval_script: str,
     population_size: int = 50,

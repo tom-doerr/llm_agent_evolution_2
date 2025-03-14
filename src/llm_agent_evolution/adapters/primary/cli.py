@@ -265,7 +265,7 @@ class CLIAdapter:
             last_count = 0
             last_print_time = time.time()
             
-            def progress_callback(current_count):
+            def progress_callback(current_count, max_count=None):
                 nonlocal last_count, last_print_time
                 now = time.time()
                 

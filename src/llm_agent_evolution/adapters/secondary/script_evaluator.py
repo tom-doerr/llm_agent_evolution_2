@@ -142,15 +142,14 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
             if process.returncode != 0:
                 error_msg = f"Evaluation script failed with error: {stderr}"
                 print(f"Error: {error_msg}")
-                # Return a default reward instead of raising an exception
-                return 0.0
+                raise RuntimeError(error_msg)
             
             # Parse the reward from the last line of output
             lines = stdout.strip().split('\n')
             if not lines:
                 error_msg = "Evaluation script produced no output"
                 print(f"Error: {error_msg}")
-                return 0.0
+                raise RuntimeError(error_msg)
             
             try:
                 reward = float(lines[-1].strip())
@@ -166,7 +165,7 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                 else:
                     error_msg = f"Evaluation script did not return a valid numerical reward: {lines[-1]}"
                     print(f"Error: {error_msg}")
-                    return 0.0
+                    raise RuntimeError(error_msg)
                 
         except subprocess.TimeoutExpired:
             error_msg = f"Evaluation script timed out after {timeout} seconds"

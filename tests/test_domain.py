@@ -69,6 +69,10 @@ def test_combine_task_chromosomes_length_handling():
     # Create a parent with too much content
     parent2 = Chromosome(content="a" * (TARGET_LENGTH * 2), type="task")
     
+    # Set a fixed seed for deterministic testing
+    import random
+    random.seed(42)
+    
     # Run multiple combinations to check statistical properties
     results = []
     for _ in range(20):
@@ -78,6 +82,9 @@ def test_combine_task_chromosomes_length_handling():
     # The average length should be closer to TARGET_LENGTH than to the longer parent
     avg_length = sum(results) / len(results)
     assert abs(avg_length - TARGET_LENGTH) < abs(avg_length - len(parent2.content))
+    
+    # Reset the random seed
+    random.seed(None)
 
 def test_mate_agents():
     """Test mating two agents"""

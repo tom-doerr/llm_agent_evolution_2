@@ -60,20 +60,20 @@ def test_mock_select_mate():
 
 def test_mock_evaluate_task_output():
     """Test task evaluation with the mock adapter"""
-    adapter = MockLLMAdapter()
+    adapter = MockLLMAdapter(seed=42)  # Use fixed seed for deterministic results
     
     # Test with different outputs
     assert adapter.evaluate_task_output("") == 0
     assert adapter.evaluate_task_output("a" * 10) == 10
     assert adapter.evaluate_task_output("a" * 23) == 23
-    assert adapter.evaluate_task_output("a" * 30) == 23 - 7  # 23 'a's but 7 chars over limit
+    assert adapter.evaluate_task_output("a" * 30) == 16  # 23 'a's but 7 chars over limit
     
     # Test with mixed content
     mixed = "a" * 15 + "b" * 5
     assert adapter.evaluate_task_output(mixed) == 15  # 15 'a's, length 20 (under limit)
     
     mixed_over = "a" * 15 + "b" * 15
-    assert adapter.evaluate_task_output(mixed_over) == 15 - 7  # 15 'a's, 7 chars over limit
+    assert adapter.evaluate_task_output(mixed_over) == 8  # 15 'a's, 7 chars over limit
     
     # Test with command-based evaluation
     adapter.eval_command = "echo 42"

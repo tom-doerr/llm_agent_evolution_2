@@ -47,6 +47,9 @@ def _create_main_parser():
         help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
     )
     
+    # Add the main arguments to the top-level parser
+    _add_common_arguments(parser)
+    
     # Add subparsers for different commands
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
     
@@ -56,9 +59,6 @@ def _create_main_parser():
     _add_standalone_subparser(subparsers)
     _add_demo_subparser(subparsers)
     _add_inference_subparser(subparsers)
-    
-    # Add the main arguments to the top-level parser
-    _add_common_arguments(parser)
     
     return parser
 
@@ -376,7 +376,7 @@ def _handle_default_command(args):
         eval_command = args.eval_command
     
     # Check for positional eval_command from sys.argv if not found in args
-    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-') and sys.argv[1] not in ["evolve", "optimize", "standalone", "demo", "inference"]:
         eval_command = sys.argv[1]
         # Set it in args for _handle_optimize_command
         args.eval_command = eval_command

@@ -122,8 +122,11 @@ raise ValueError("Test error")
         evaluator = ScriptEvaluatorAdapter()
         
         # Test evaluation with error
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as excinfo:
             evaluator.evaluate("test", script_path)
+        
+        # Verify the error message contains the original error
+        assert "Test error" in str(excinfo.value) or "ValueError" in str(excinfo.value)
     finally:
         # Clean up
         if os.path.exists(script_path):

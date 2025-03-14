@@ -129,8 +129,8 @@ print(len(text))  # Reward is the length of the text
         
         # Check that it ran successfully
         assert result.returncode == 0
-        assert "Evaluation command: python" in result.stdout
-        assert "Starting optimization" in result.stdout
+        assert "Using evaluation command: python" in result.stdout
+        assert "Starting optimization" in result.stdout or "Starting evolution" in result.stdout
         
         # Test the inference command
         # First create a simple agent file

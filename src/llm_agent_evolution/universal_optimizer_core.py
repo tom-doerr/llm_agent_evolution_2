@@ -266,7 +266,7 @@ class UniversalOptimizer:
         
         Args:
             max_evaluations: Maximum number of evaluations to run
-            progress_callback: Callback function for progress updates
+            progress_callback: Callback function for progress updates (current_count, max_count)
             
         Returns:
             Dictionary with optimization results
@@ -331,6 +331,12 @@ class UniversalOptimizer:
                 if progress_callback and time.time() - last_progress_time > 0.5:
                     try:
                         progress_callback(current_count, max_evaluations)
+                    except TypeError:
+                        # Try with single argument for backward compatibility
+                        try:
+                            progress_callback(current_count)
+                        except Exception as e:
+                            print(f"Error in progress callback: {e}")
                     except Exception as e:
                         print(f"Error in progress callback: {e}")
                     last_progress_time = time.time()
