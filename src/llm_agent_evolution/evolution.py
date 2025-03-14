@@ -124,12 +124,17 @@ class EvolutionEngine:
     
         if show_verbose:
             self._print_verbose_mating_info(parent1, parent2, new_agent)
-            print("\n3. EVALUATION")
+            print("\n3. MUTATION")
     
-        # Mutation happens indirectly through merging in mate_agents
-        # No explicit mutation step as per spec
+        # Apply mutation to introduce variation
+        mutated_agent = self.mutate_agent(new_agent)
+        
+        if show_verbose:
+            print(f"After mutation:")
+            print(f"Task Chromosome: {mutated_agent.task_chromosome.content[:50]}...")
+            print("\n4. EVALUATION")
     
-        return new_agent
+        return mutated_agent
     
     def _add_to_population(self, agent: Agent) -> None:
         with self.population_lock:
@@ -294,7 +299,8 @@ def run_optimizer(
     model_name: str = "openrouter/google/gemini-2.0-flash-001",
     initial_content: str = "",
     verbose: bool = False,
-    random_seed: Optional[int] = None
+    random_seed: Optional[int] = None,
+    log_file: str = "evolution.log"
 ) -> Dict[str, Any]:
     # Set random seed if provided
     if random_seed is not None:
@@ -317,6 +323,14 @@ def run_optimizer(
         initial_content=initial_content,
         verbose=verbose
     )
+    
+    # Set up logging
+    from llm_agent_evolution.adapters.secondary.logging import FileLoggingAdapter
+    logging_adapter = FileLoggingAdapter(log_file=log_file)
+    try:
+        logging_adapter.initialize_log()
+    except Exception as e:
+        print(f"Warning: Could not initialize log: {e}")
     
     # Run evolution with simplified progress indicator
     print(f"Starting optimization with {population_size} agents and {parallel_agents} parallel workers")

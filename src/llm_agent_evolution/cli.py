@@ -42,7 +42,7 @@ def main(args: Optional[List[str]] = None) -> int:
         # Handle quick test mode
         if parsed_args.quick_test:
             from llm_agent_evolution.quick_test import main as run_quick_test
-            return run_quick_test(seed=parsed_args.seed)
+            return run_quick_test(seed=parsed_args.seed, log_file=parsed_args.log_file)
         
         # Handle loaded agent mode
         if parsed_args.load and parsed_args.eval_command:
@@ -66,7 +66,8 @@ def main(args: Optional[List[str]] = None) -> int:
                 model_name=parsed_args.model,
                 initial_content=parsed_args.initial_content,
                 verbose=parsed_args.verbose,
-                random_seed=parsed_args.seed
+                random_seed=parsed_args.seed,
+                log_file=parsed_args.log_file
             )
             
             # Save the best agent if requested
@@ -232,6 +233,8 @@ def _create_main_parser():
                        help="Run a quick test with mock LLM")
     parser.add_argument("--verbose", "-v", action="store_true",
                        help="Enable verbose output")
+    parser.add_argument("--log-file", type=str, default="evolution.log",
+                       help="Log file path")
     
     return parser
 

@@ -13,9 +13,36 @@ class DSPyLLMAdapter:
         self.eval_command = None
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
-        # We don't actually use this for mutation as per spec
-        # Just return the original chromosome
-        return chromosome
+        # Per spec, mutation should be indirect through merging
+        # For real LLM, we'll use the mutation instructions to guide the LLM
+        if chromosome.type == "task":
+            try:
+                prompt = f"""
+                You are optimizing text to maximize a reward function.
+                
+                Current text: {chromosome.content}
+                
+                Instructions for improvement:
+                {mutation_instructions}
+                
+                Generate an improved version of the text that will maximize the reward.
+                Only return the improved text, nothing else.
+                """
+                
+                response = self.lm(prompt, max_tokens=MAX_OUTPUT_TOKENS)
+                response_text = self._process_llm_response(response)
+                
+                # Ensure we don't exceed max chars
+                if len(response_text) > MAX_CHARS:
+                    response_text = response_text[:MAX_CHARS]
+                
+                return Chromosome(content=response_text, type=chromosome.type)
+            except Exception as e:
+                print(f"Error in LLM mutation: {e}")
+                return chromosome
+        else:
+            # For other chromosomes, just return the original
+            return chromosome
     
     def _process_llm_response(self, response: Any) -> str:
         if isinstance(response, list):

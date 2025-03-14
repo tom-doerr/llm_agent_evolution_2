@@ -53,10 +53,24 @@ class EvolutionService:
     
     def mutate_agent(self, agent: Agent) -> Agent:
         """
-        Mutation happens indirectly through merging
-        This method is kept for compatibility but just returns the agent
+        Apply mutation to the agent using its mutation chromosome as instructions
+        Per spec, mutation should be indirect through merging, but we need some variation
         """
-        return agent
+        # Use the agent's mutation chromosome as instructions
+        mutation_instructions = agent.mutation_chromosome.content
+        
+        # Apply mutation to task chromosome
+        task_chromosome = self.llm_adapter.generate_mutation(
+            agent.task_chromosome,
+            mutation_instructions
+        )
+        
+        # Create new agent with mutated task chromosome
+        return Agent(
+            task_chromosome=task_chromosome,
+            mate_selection_chromosome=agent.mate_selection_chromosome,
+            mutation_chromosome=agent.mutation_chromosome
+        )
     
     def evaluate_agent(self, agent: Agent) -> float:
         """Evaluate an agent and return its reward"""
@@ -101,10 +115,10 @@ class EvolutionService:
     def get_population_stats(self, population: List[Agent]) -> Dict[str, Any]:
         """Get statistics about the current population"""
         # Get overall statistics
-        stats = self.statistics_port.get_stats()
+        stats = self.statistics_adapter.get_stats()
         
         # Get sliding window statistics
-        window_stats = self.statistics_port.get_sliding_window_stats(window_size=100)
+        window_stats = self.statistics_adapter.get_sliding_window_stats(window_size=100)
         
         # Combine the statistics
         combined_stats = {
@@ -114,7 +128,7 @@ class EvolutionService:
         }
         
         # Log the statistics
-        self.logging_port.log_population_stats(combined_stats)
+        self.logging_adapter.log_population_stats(combined_stats)
         
         return combined_stats
     
@@ -157,7 +171,10 @@ class EvolutionService:
             parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
             
             # Create new agent through mating
-            return self.mate_agents(parent1, parent2)
+            new_agent = self.mate_agents(parent1, parent2)
+            
+            # Apply mutation to introduce variation
+            return self.mutate_agent(new_agent)
     
     def run_evolution(self, 
                      population_size: int, 
@@ -186,7 +203,7 @@ class EvolutionService:
             population = self.initialize_population(population_size)
         
         # Log start event
-        self.logging_port.log_event("Evolution Started", {
+        self.logging_adapter.log_event("Evolution Started", {
             "population_size": population_size,
             "parallel_agents": parallel_agents,
             "max_evaluations": max_evaluations or "unlimited"
@@ -245,8 +262,8 @@ class EvolutionService:
                         print(f"Worker error during shutdown: {e}")
         
         # Log end event
-        self.logging_port.log_event("Evolution Completed", {
-            "total_evaluations": len(self.statistics_port.rewards),
+        self.logging_adapter.log_event("Evolution Completed", {
+            "total_evaluations": len(self.statistics_adapter.rewards),
             "final_population_size": len(population)
         })
         

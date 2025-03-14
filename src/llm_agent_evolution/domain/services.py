@@ -105,6 +105,15 @@ def _select_primary_parent(parent1: Chromosome, parent2: Chromosome) -> Tuple[Ch
         p1_distance = abs(len(parent1.content) - TARGET_LENGTH)
         p2_distance = abs(len(parent2.content) - TARGET_LENGTH)
         
+        # Count 'a's in each parent for task chromosomes
+        p1_a_count = parent1.content[:TARGET_LENGTH].count('a')
+        p2_a_count = parent2.content[:TARGET_LENGTH].count('a')
+        
+        # Prefer parent with more 'a's if counts differ significantly
+        if abs(p1_a_count - p2_a_count) > 3:
+            return (parent1, parent2) if p1_a_count > p2_a_count else (parent2, parent1)
+        
+        # Otherwise prefer parent closer to target length
         return (parent1, parent2) if p1_distance < p2_distance else (parent2, parent1)
     else:
         # For other chromosomes, random selection
@@ -137,15 +146,16 @@ def _perform_crossover(primary_content: str, secondary_content: str, hotspots: L
     
     # Perform the switches
     for switch_point in switch_points:
-        # Take content from secondary parent from this point
-        if switch_point < len(secondary_content):
-            secondary_part = list(secondary_content[switch_point:])
-            
-            # Adjust result length
-            if switch_point + len(secondary_part) > len(result):
-                result = result[:switch_point] + secondary_part
-            else:
-                result[switch_point:switch_point+len(secondary_part)] = secondary_part
+        if random.random() < CHROMOSOME_SWITCH_PROBABILITY:
+            # Take content from secondary parent from this point
+            if switch_point < len(secondary_content):
+                secondary_part = list(secondary_content[switch_point:])
+                
+                # Adjust result length
+                if switch_point + len(secondary_part) > len(result):
+                    result = result[:switch_point] + secondary_part
+                else:
+                    result[switch_point:switch_point+len(secondary_part)] = secondary_part
     
     return ''.join(result)
 

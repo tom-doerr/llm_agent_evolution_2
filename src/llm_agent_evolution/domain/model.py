@@ -4,7 +4,7 @@ from typing import Optional, Literal, Dict
 
 # Constants from spec
 MAX_CHARS = 1000  # Maximum characters for chromosomes
-MAX_POPULATION_SIZE = 1000000  # Default population size limit
+MAX_POPULATION_SIZE = 1000000  # Default population size limit (1 million as per spec)
 TARGET_LENGTH = 23  # Target length for task optimization
 MAX_OUTPUT_TOKENS = 40  # Limit token output for the DSPy LM
 CHROMOSOME_TYPES = Literal["task", "mate_selection", "mutation"]
