@@ -5,15 +5,12 @@ Script to run LLM Agent Evolution with DSPy
 import sys
 import os
 import argparse
-from rich.console import Console
 
 # Add the src directory to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 def main():
     """Run LLM Agent Evolution with DSPy"""
-    console = Console()
-    
     parser = argparse.ArgumentParser(description="Run LLM Agent Evolution with DSPy")
     parser.add_argument("--population-size", type=int, default=50, help="Population size")
     parser.add_argument("--parallel-agents", type=int, default=4, help="Number of parallel agents")
@@ -24,16 +21,17 @@ def main():
     args = parser.parse_args()
     
     # Print banner
-    console.print("[bold green]LLM Agent Evolution with DSPy[/bold green]")
-    console.print(f"Population size: [cyan]{args.population_size}[/cyan]")
-    console.print(f"Parallel agents: [cyan]{args.parallel_agents}[/cyan]")
-    console.print(f"Max evaluations: [cyan]{args.max_evaluations}[/cyan]")
-    console.print(f"Model: [cyan]{args.model}[/cyan]")
-    console.print(f"Log file: [cyan]{args.log_file}[/cyan]")
+    print("LLM Agent Evolution with DSPy")
+    print(f"Population size: {args.population_size}")
+    print(f"Parallel agents: {args.parallel_agents}")
+    print(f"Max evaluations: {args.max_evaluations}")
+    print(f"Model: {args.model}")
+    print(f"Log file: {args.log_file}")
     
     # Confirm before running with real LLM
-    if not console.input("\n[yellow]This will make real API calls to the LLM. Continue? (y/n): [/yellow]").lower().startswith('y'):
-        console.print("[red]Aborted.[/red]")
+    response = input("\nThis will make real API calls to the LLM. Continue? (y/n): ")
+    if not response.lower().startswith('y'):
+        print("Aborted.")
         return 1
     
     # Set environment variables

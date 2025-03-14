@@ -2,9 +2,6 @@ import argparse
 import sys
 from typing import List, Dict, Any
 import time
-from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from llm_agent_evolution.ports.primary import EvolutionUseCase
 
 class CLIAdapter:
@@ -13,7 +10,6 @@ class CLIAdapter:
     def __init__(self, evolution_use_case: EvolutionUseCase):
         """Initialize the CLI adapter with the evolution use case"""
         self.evolution_use_case = evolution_use_case
-        self.console = Console()
     
     def parse_args(self) -> argparse.Namespace:
         """Parse command-line arguments"""
@@ -78,42 +74,30 @@ class CLIAdapter:
         return parser.parse_args()
     
     def display_stats(self, stats: Dict[str, Any]) -> None:
-        """Display statistics to the console using rich"""
-        self.console.print("\n[bold green]=== Population Statistics ===")
+        """Display statistics to the console"""
+        print("\n=== Population Statistics ===")
         
-        # Create a table for overall stats
-        table = Table(title="Overall Statistics")
-        table.add_column("Metric", style="cyan")
-        table.add_column("Value", style="green")
-        
-        # Add rows for each stat
-        table.add_row("Population size", str(stats.get('population_size', 0)))
-        table.add_row("Total evaluations", str(stats.get('count', 0)))
+        # Print overall stats
+        print(f"Population size: {stats.get('population_size', 0)}")
+        print(f"Total evaluations: {stats.get('count', 0)}")
         
         if stats.get('mean') is not None:
-            table.add_row("Mean reward", f"{stats.get('mean'):.2f}")
-            table.add_row("Median reward", f"{stats.get('median'):.2f}")
-            table.add_row("Std deviation", f"{stats.get('std_dev'):.2f}")
-            table.add_row("Best reward", f"{stats.get('best'):.2f}")
-            table.add_row("Worst reward", f"{stats.get('worst'):.2f}")
-        
-        self.console.print(table)
+            print(f"Mean reward: {stats.get('mean'):.2f}")
+            print(f"Median reward: {stats.get('median'):.2f}")
+            print(f"Std deviation: {stats.get('std_dev'):.2f}")
+            print(f"Best reward: {stats.get('best'):.2f}")
+            print(f"Worst reward: {stats.get('worst'):.2f}")
         
         # Recent window stats
         window_stats = stats.get('window_stats', {})
         if window_stats and window_stats.get('count', 0) > 0:
-            window_table = Table(title=f"Recent Evaluations (Last {window_stats.get('window_size', 100)})")
-            window_table.add_column("Metric", style="cyan")
-            window_table.add_column("Value", style="yellow")
-            
-            window_table.add_row("Count", str(window_stats.get('count', 0)))
+            print(f"\nRecent Evaluations (Last {window_stats.get('window_size', 100)})")
+            print(f"Count: {window_stats.get('count', 0)}")
             
             if window_stats.get('mean') is not None:
-                window_table.add_row("Mean reward", f"{window_stats.get('mean'):.2f}")
-                window_table.add_row("Median reward", f"{window_stats.get('median'):.2f}")
-                window_table.add_row("Std deviation", f"{window_stats.get('std_dev'):.2f}")
-            
-            self.console.print(window_table)
+                print(f"Mean reward: {window_stats.get('mean'):.2f}")
+                print(f"Median reward: {window_stats.get('median'):.2f}")
+                print(f"Std deviation: {window_stats.get('std_dev'):.2f}")
     
     def run(self) -> int:
         """Run the CLI application"""
@@ -121,7 +105,7 @@ class CLIAdapter:
         
         # Handle quick test mode
         if args.quick_test:
-            self.console.print("[bold]Running quick test with mock LLM adapter[/bold]")
+            print("Running quick test with mock LLM adapter")
             args.use_mock = True
             args.max_evaluations = 100
             args.population_size = 20
@@ -131,44 +115,36 @@ class CLIAdapter:
         
         try:
             # Show startup message
-            self.console.print(f"[bold blue]LLM Agent Evolution[/bold blue]")
-            self.console.print(f"Population size: {args.population_size}")
-            self.console.print(f"Parallel agents: {args.parallel_agents}")
-            self.console.print(f"Max evaluations: {args.max_evaluations or 'unlimited'}")
-            self.console.print(f"Using {'mock' if args.use_mock else 'real'} LLM adapter")
+            print("LLM Agent Evolution")
+            print(f"Population size: {args.population_size}")
+            print(f"Parallel agents: {args.parallel_agents}")
+            print(f"Max evaluations: {args.max_evaluations or 'unlimited'}")
+            print(f"Using {'mock' if args.use_mock else 'real'} LLM adapter")
             
-            # Create progress display
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                TimeElapsedColumn(),
-                console=self.console
-            ) as progress:
-                # Create a task for tracking progress
-                task_id = progress.add_task(
-                    "Running evolution...", 
-                    total=args.max_evaluations if args.max_evaluations else 1000
-                )
-                
-                # Run the evolution process with progress updates
-                def progress_callback(current_count):
+            # Simple progress tracking
+            last_count = 0
+            last_print_time = time.time()
+            
+            def progress_callback(current_count):
+                nonlocal last_count, last_print_time
+                now = time.time()
+                # Only print progress every 5 seconds to avoid flooding the console
+                if now - last_print_time >= 5:
                     if args.max_evaluations:
-                        progress.update(task_id, completed=min(current_count, args.max_evaluations))
+                        print(f"Progress: {current_count}/{args.max_evaluations} evaluations "
+                              f"({current_count/args.max_evaluations*100:.1f}%)")
                     else:
-                        # If no max, just keep extending the bar
-                        if current_count > progress.tasks[task_id].total:
-                            progress.update(task_id, total=current_count * 2)
-                        progress.update(task_id, completed=current_count)
-                
-                # Run evolution
-                population = self.evolution_use_case.run_evolution(
-                    population_size=args.population_size,
-                    parallel_agents=args.parallel_agents,
-                    max_evaluations=args.max_evaluations,
-                    progress_callback=progress_callback
-                )
+                        print(f"Progress: {current_count} evaluations")
+                    last_count = current_count
+                    last_print_time = now
+            
+            # Run evolution
+            population = self.evolution_use_case.run_evolution(
+                population_size=args.population_size,
+                parallel_agents=args.parallel_agents,
+                max_evaluations=args.max_evaluations,
+                progress_callback=progress_callback
+            )
             
             # Get and display final statistics
             stats = self.evolution_use_case.get_population_stats(population)
@@ -176,20 +152,20 @@ class CLIAdapter:
             
             # Display best agent
             best_agent = max(population, key=lambda a: a.reward if a.reward is not None else float('-inf'))
-            self.console.print("\n[bold green]=== Best Agent ===")
-            self.console.print(f"ID: {best_agent.id}")
-            self.console.print(f"Reward: {best_agent.reward}")
-            self.console.print("[bold]Task Chromosome:[/bold]")
-            self.console.print(best_agent.task_chromosome.content)
+            print("\n=== Best Agent ===")
+            print(f"ID: {best_agent.id}")
+            print(f"Reward: {best_agent.reward}")
+            print("Task Chromosome:")
+            print(best_agent.task_chromosome.content)
             
             return 0
         except KeyboardInterrupt:
-            self.console.print("\n[bold red]Evolution process interrupted by user.[/bold red]")
+            print("\nEvolution process interrupted by user.")
             return 1
         except Exception as e:
-            self.console.print(f"\n[bold red]Error: {e}[/bold red]")
+            print(f"\nError: {e}")
             import traceback
-            self.console.print(traceback.format_exc())
+            print(traceback.format_exc())
             return 1
 
 def main():
