@@ -10,7 +10,11 @@ PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EA
 # hmm can we rename output file arg to save?
 # output format seems like bloat, please standardise to toml
 # why do we have so many commands for llm-evolve? i just want the command as string argument for optimization functionality
+# add --load argument for loading a saved agent
 
+
+
+=============================================================================================
 # fix the cannot access local variable argparse error when runnnign llm evolve 
 Fixed the argparse error by removing the redundant import inside the main() function. The import at the top of the file is sufficient, and the redundant import was causing the variable to be redefined in a way that created scope issues.
 DONE
