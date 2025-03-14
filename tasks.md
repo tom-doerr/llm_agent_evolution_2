@@ -1,4 +1,10 @@
-PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH 
+PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
+
+
+# add more integration tests using real llm calls
+
+# remove llm-optimize
+# why do the usage examples you show say python -m llm_agent_evolution? shouldn't it all work usign the cli tool?
 
 # why do we have different cli tools? seems to me one is just an example of the more general other one
 We have different CLI tools to serve different use cases:
@@ -252,11 +258,3 @@ test_llm_adapter_script.py has been moved to tests/test_llm_adapter_direct.py:
 This improves the test organization and makes it easier to run automated tests.
 DONE
 
-# TODO: Add more example evaluation scripts for different use cases
-# TODO: Improve error handling consistency across the codebase
-# TODO: Add more comprehensive docstrings with examples
-# TODO: Create a tutorial for extending the framework with custom components
-# TODO: Implement a strategy market for sharing optimization strategies
-# TODO: Add support for checkpointing and resuming optimization runs
-# TODO: Improve performance for very large populations
-# TODO: Add support for distributed optimization across multiple machines
