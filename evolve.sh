@@ -25,7 +25,7 @@ fi
 case "$1" in
     quick-test)
         shift
-        python -m src.llm_agent_evolution.quick_test "$@"
+        python -m llm_agent_evolution.quick_test "$@"
         ;;
     run)
         shift

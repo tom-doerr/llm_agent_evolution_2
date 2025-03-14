@@ -7,7 +7,7 @@ import os
 import argparse
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 def main():
     """Parse arguments and run the appropriate command"""
@@ -34,7 +34,7 @@ def main():
         return 1
     
     if args.command == "quick-test":
-        from src.llm_agent_evolution.quick_test import main as quick_test_main
+        from llm_agent_evolution.quick_test import main as quick_test_main
         return quick_test_main(seed=args.seed)
     elif args.command == "run":
         # Set environment variables for the application
@@ -48,7 +48,7 @@ def main():
         os.environ["LOG_FILE"] = args.log_file
         
         # Import and run the application
-        from src.llm_agent_evolution.application import main as app_main
+        from llm_agent_evolution.application import main as app_main
         return app_main()
     else:
         parser.print_help()
