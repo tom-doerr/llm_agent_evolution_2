@@ -45,7 +45,7 @@ class UniversalOptimizer:
             script_timeout: Maximum execution time for the evaluation script
             initial_content: Initial content for the chromosomes
             max_chars: Maximum number of characters for chromosomes
-            verbose: Whether to enable verbose output
+            verbose: Whether to enable verbose output with detailed information for five fixed agents
         """
         # Set random seed if provided
         if random_seed is not None:
@@ -78,8 +78,9 @@ class UniversalOptimizer:
         self.stop_event = threading.Event()
         self.population_lock = threading.Lock()
         
-        # Verbose output control
+        # Verbose output control - track exactly 5 fixed agents as specified in spec
         self.max_verbose_agents = 5  # Maximum number of agents to show verbose output for
+        self.verbose_agent_ids = set()  # Set of agent IDs to show verbose output for
         self.verbose_agent_count = 0  # Counter for agents with verbose output
     
     def initialize_population(self) -> List[Agent]:
@@ -209,8 +210,8 @@ class UniversalOptimizer:
                 # Create new agent through mating or random initialization
                 new_agent = self._create_new_agent(parents)
                 
-                # Handle verbose output if enabled
-                show_verbose = self._should_show_verbose_output()
+                # Handle verbose output if enabled - check if we should track this agent
+                show_verbose = self._should_show_verbose_output(new_agent.id)
                 
                 # Show verbose output for parent selection and mating if enabled
                 if show_verbose:
@@ -224,6 +225,9 @@ class UniversalOptimizer:
                 
                 if show_verbose:
                     self._print_verbose_mutation_result(mutated_agent)
+                    
+                    # Add the mutated agent ID to verbose tracking
+                    self.verbose_agent_ids.add(mutated_agent.id)
                 
                 # Evaluate the agent
                 if show_verbose:
@@ -484,15 +488,23 @@ class UniversalOptimizer:
                 parent2 = parents[1] if len(parents) > 1 else parent1
                 return mate_agents(parent1, parent2)
     
-    def _should_show_verbose_output(self) -> bool:
-        """Determine if verbose output should be shown for the current agent"""
+    def _should_show_verbose_output(self, agent_id: str) -> bool:
+        """Determine if verbose output should be shown for the agent"""
         if not self.verbose:
             return False
             
         with self.population_lock:
-            if self.verbose_agent_count < self.max_verbose_agents:
-                self.verbose_agent_count += 1
+            # If we're tracking this agent already, show output
+            if agent_id in self.verbose_agent_ids:
                 return True
+                
+            # If we haven't reached max agents to track, add this one
+            if len(self.verbose_agent_ids) < self.max_verbose_agents:
+                self.verbose_agent_ids.add(agent_id)
+                self.verbose_agent_count += 1
+                print(f"\nNow tracking agent {agent_id} for verbose output (agent {self.verbose_agent_count} of {self.max_verbose_agents})")
+                return True
+                
             return False
     
     def _print_verbose_mating_info(self, parents: List[Agent], new_agent: Agent) -> None:

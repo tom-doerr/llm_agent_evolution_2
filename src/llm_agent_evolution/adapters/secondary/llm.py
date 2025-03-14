@@ -86,9 +86,10 @@ class DSPyLLMAdapter(LLMPort):
     
     def _create_mate_selection_prompt(self, agent: Agent, candidates: List[Agent]) -> str:
         """Create a prompt for mate selection"""
-        # Create a prompt with candidate information
+        # Create a prompt with candidate DNA information as specified in the spec
         candidates_info = "\n\n".join([
-            f"Candidate {i+1} ID: {candidate.id}\n"
+            f"Candidate {i+1} DNA:\n"
+            f"ID: {candidate.id}\n"
             f"Task Chromosome: {candidate.task_chromosome.content}\n"
             f"Mate Selection Chromosome: {candidate.mate_selection_chromosome.content}\n"
             f"Mutation Chromosome: {candidate.mutation_chromosome.content}\n"
@@ -97,12 +98,12 @@ class DSPyLLMAdapter(LLMPort):
         ])
         
         return f"""
-        You are selecting a mate for an AI agent.
+        You are selecting a mate for an AI agent based on DNA analysis.
         
-        Your mate selection criteria:
+        Your DNA contains these mate selection instructions:
         {agent.mate_selection_chromosome.content}
         
-        Available candidates:
+        Available candidate DNA:
         {candidates_info}
         
         Select one candidate by returning ONLY the number (1-{len(candidates)}) of your choice:

@@ -127,6 +127,10 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
             # Preserve existing context from environment
             env['AGENT_CONTEXT'] = os.environ['AGENT_CONTEXT']
             
+        # Print debug info about context
+        if context or 'AGENT_CONTEXT' in env:
+            print(f"Using context for evaluation: {env.get('AGENT_CONTEXT', '')[:50]}...")
+            
         try:
             # Run the script with the output as stdin
             process = subprocess.Popen(

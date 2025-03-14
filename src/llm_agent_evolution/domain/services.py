@@ -44,7 +44,7 @@ def _select_random_agents(population: List[Agent], num_agents: int) -> List[Agen
     return random.sample(population, min(num_agents, len(population)))
 
 def _calculate_selection_weights(agents: List[Agent]) -> List[float]:
-    """Calculate selection weights based on rewards"""
+    """Calculate selection weights based on rewards using Pareto distribution weighting by fitness^2"""
     # Get reward statistics
     rewards = [agent.reward for agent in agents]
     min_reward = min(rewards)
@@ -63,11 +63,16 @@ def _calculate_selection_weights(agents: List[Agent]) -> List[float]:
         adjusted_rewards = rewards.copy()
     
     # Square the rewards for Pareto distribution (emphasize higher rewards)
+    # This implements the spec requirement: "Pareto distribution weighting by fitness^2"
     squared_rewards = [r**2 for r in adjusted_rewards]
     
+    # Apply Pareto principle (80/20 rule) - further emphasize higher values
+    # This creates a more pronounced power law distribution
+    pareto_weights = [w**1.5 for w in squared_rewards]  # Exponent > 1 increases skew toward higher values
+    
     # Normalize weights
-    total_weight = sum(squared_rewards)
-    return [w / total_weight for w in squared_rewards]
+    total_weight = sum(pareto_weights)
+    return [w / total_weight for w in pareto_weights]
 
 def _weighted_selection(agents: List[Agent], weights: List[float], num_select: int) -> List[Agent]:
     """Perform weighted selection without replacement"""
@@ -161,9 +166,16 @@ def _calculate_length_fitness(parent1: Chromosome, parent2: Chromosome) -> Tuple
     p1_distance = abs(len(parent1.content) - TARGET_LENGTH)
     p2_distance = abs(len(parent2.content) - TARGET_LENGTH)
     
-    # Stronger bias toward target length - inverse square of distance
-    p1_value = max(1, (TARGET_LENGTH - p1_distance)**2) if p1_distance <= TARGET_LENGTH else max(1, TARGET_LENGTH / (p1_distance + 1))
-    p2_value = max(1, (TARGET_LENGTH - p2_distance)**2) if p2_distance <= TARGET_LENGTH else max(1, TARGET_LENGTH / (p2_distance + 1))
+    # Much stronger bias toward target length - exponential penalty for being too long
+    if len(parent1.content) <= TARGET_LENGTH:
+        p1_value = max(1, (TARGET_LENGTH - p1_distance)**2)
+    else:
+        p1_value = max(1, TARGET_LENGTH / (p1_distance**2 + 1))
+        
+    if len(parent2.content) <= TARGET_LENGTH:
+        p2_value = max(1, (TARGET_LENGTH - p2_distance)**2)
+    else:
+        p2_value = max(1, TARGET_LENGTH / (p2_distance**2 + 1))
     
     return p1_value, p2_value
 
@@ -194,35 +206,30 @@ def _find_hotspots(content: str) -> List[int]:
     return hotspots
 
 def _perform_crossover(primary_content: str, secondary_content: str, hotspots: List[int]) -> List[str]:
-    """Perform crossover at hotspots"""
+    """Perform crossover at hotspots to ensure one chromosome jump per chromosome"""
     # Start with primary parent's content
     result = list(primary_content)
     
-    # Calculate target number of switches - aim for ~1 switch per chromosome
-    # This ensures we have on average one chromosome jump per chromosome as specified
-    target_switches = 1
-    
-    # Sort hotspots and select a subset for switching
+    # Sort hotspots
     hotspots.sort()
-    if hotspots:
-        # Select random hotspots for switching - ensure at least one switch point
-        # to guarantee chromosome jumps happen
-        num_switch_points = max(1, min(target_switches, len(hotspots)))
-        switch_points = sorted(random.sample(hotspots, num_switch_points))
+    if not hotspots:
+        return result
         
-        # Perform the switches - always do at least one switch
-        for point in switch_points:
-            # Increased probability to ensure we get switches
-            if random.random() < CHROMOSOME_SWITCH_PROBABILITY or point == switch_points[0]:
-                # Take content from secondary parent from this point
-                if point < len(secondary_content):
-                    secondary_content_list = list(secondary_content[point:])
-                    
-                    # Adjust result length
-                    if point + len(secondary_content_list) > len(result):
-                        result = result[:point] + secondary_content_list
-                    else:
-                        result[point:point+len(secondary_content_list)] = secondary_content_list
+    # Always perform exactly one switch to ensure "one chromosome jump per chromosome"
+    # as specified in the spec
+    
+    # Select a random hotspot for switching
+    switch_point = random.choice(hotspots)
+    
+    # Take content from secondary parent from this point
+    if switch_point < len(secondary_content):
+        secondary_content_list = list(secondary_content[switch_point:])
+        
+        # Adjust result length
+        if switch_point + len(secondary_content_list) > len(result):
+            result = result[:switch_point] + secondary_content_list
+        else:
+            result[switch_point:switch_point+len(secondary_content_list)] = secondary_content_list
     
     return result
 

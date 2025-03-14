@@ -20,6 +20,9 @@ def main(seed=42):
     # Create a valid log file path in a directory that should be writable
     log_file = os.path.join(tempfile.gettempdir(), "quick_test.log")
     
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    
     # Create application with mock adapter
     cli = create_application(use_mock=True, random_seed=seed, log_file=log_file)
     

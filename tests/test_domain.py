@@ -81,7 +81,11 @@ def test_combine_task_chromosomes_length_handling():
     
     # The average length should be closer to TARGET_LENGTH than to the longer parent
     avg_length = sum(results) / len(results)
-    assert abs(avg_length - TARGET_LENGTH) < abs(avg_length - len(parent2.content))
+    assert abs(avg_length - TARGET_LENGTH) < abs(avg_length - len(parent2.content)), \
+        f"Average length {avg_length} should be closer to target {TARGET_LENGTH} than to longer parent {len(parent2.content)}"
+    
+    # Check that at least some results are exactly TARGET_LENGTH
+    assert TARGET_LENGTH in results, f"None of the results had the target length {TARGET_LENGTH}"
     
     # Reset the random seed
     random.seed(None)
