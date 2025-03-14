@@ -263,13 +263,64 @@ print(a_count)
             text=True,
             timeout=60  # Add timeout to prevent hanging
         )
-        
+    
         # Check that inference mode works correctly
         assert result.returncode == 0
         assert "RUNNING INFERENCE WITH LOADED AGENT" in result.stdout
         assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
         assert "Context: Inference specific context" in result.stdout
         assert "Reward: 23" in result.stdout
+    
+        # Test with a more complex agent that has different content
+        complex_agent_data = {
+            "agent": {
+                "id": "complex-test-agent",
+                "reward": 15.0,
+                "task_chromosome": {
+                    "content": "This is a complex test with some a's: aaaaa",
+                    "type": "task"
+                },
+                "mate_selection_chromosome": {
+                    "content": "Select the mate with diverse characteristics",
+                    "type": "mate_selection"
+                },
+                "mutation_chromosome": {
+                    "content": "Try different approaches to maximize the score",
+                    "type": "mutation"
+                }
+            }
+        }
+    
+        with tempfile.NamedTemporaryFile(suffix='.toml', delete=False) as complex_file:
+            complex_agent_file = complex_file.name
+            tomli_w.dump(complex_agent_data, complex_file)
+    
+        # Test loading the complex agent
+        try:
+            result = subprocess.run(
+                [
+                    "python", "-m", "llm_agent_evolution",
+                    "inference",
+                    "--use-mock",
+                    "--load", complex_agent_file,
+                    "--eval-command", f"python {script_path}",
+                    "--context", "Complex test context"
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+        
+            # Check results
+            assert result.returncode == 0
+            assert "RUNNING INFERENCE WITH LOADED AGENT" in result.stdout
+            assert "Agent output: This is a complex test with some a's: aaaaa" in result.stdout
+            assert "Context: Complex test context" in result.stdout
+            assert "a count: 5" in result.stdout
+            assert "Reward: 5" in result.stdout
+        finally:
+            if os.path.exists(complex_agent_file):
+                os.remove(complex_agent_file)
         
     finally:
         # Clean up
