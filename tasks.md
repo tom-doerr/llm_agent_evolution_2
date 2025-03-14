@@ -1,6 +1,9 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+# is universal optimize part of the package? required for it? 
+# why do i get a cannot decalre build system twice error when trying to install the package
+
 # add more integration tests using real llm calls
 We should add integration tests that use real LLM calls to verify the full system works correctly:
 1. Create a test that runs a small evolution process with 2-3 agents
@@ -9,7 +12,7 @@ We should add integration tests that use real LLM calls to verify the full syste
 4. Verify the CLI interface works end-to-end
 
 These tests should use a minimal number of LLM calls (<100) to be practical while still testing the real functionality.
-DONE
+PENDING
 
 # remove llm-optimize
 The `llm-optimize` entry point should be removed from pyproject.toml since we're consolidating the CLI tools. The universal optimizer functionality is now accessible through the main CLI tool with the `optimize` subcommand:
