@@ -6,6 +6,7 @@ from .model import Agent, Chromosome
 # Constants
 CHROMOSOME_SWITCH_PROBABILITY = 0.3  # Probability of switching chromosomes at hotspots
 HOTSPOT_CHARS = ".,;:!?()[]{}'\"\n "  # Punctuation and spaces as hotspots
+TARGET_LENGTH = 23  # Target length for task optimization (used in combine_chromosomes)
 
 def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Agent]:
     """
@@ -76,11 +77,12 @@ def combine_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
         return Chromosome(content=parent1.content, type=parent1.type)
     
     # Determine which parent has more valuable content based on length
-    # For task chromosomes, we prefer shorter content (up to TARGET_LENGTH)
+    # For task chromosomes, we prefer shorter content (up to a reasonable length)
     if parent1.type == "task":
-        # For task chromosomes, prefer content closer to TARGET_LENGTH
-        p1_value = max(0, TARGET_LENGTH - abs(len(parent1.content) - TARGET_LENGTH))
-        p2_value = max(0, TARGET_LENGTH - abs(len(parent2.content) - TARGET_LENGTH))
+        # For task chromosomes, prefer content closer to a reasonable length
+        optimal_length = 100  # A reasonable target length for most tasks
+        p1_value = max(0, optimal_length - abs(len(parent1.content) - optimal_length))
+        p2_value = max(0, optimal_length - abs(len(parent2.content) - optimal_length))
         
         # If one parent is significantly better, bias toward it
         if p1_value > p2_value * 1.5:
