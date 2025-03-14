@@ -180,7 +180,8 @@ class EvolutionService(EvolutionUseCase):
                      population_size: int, 
                      parallel_agents: int,
                      max_evaluations: Optional[int] = None,
-                     progress_callback: Optional[callable] = None) -> List[Agent]:
+                     progress_callback: Optional[callable] = None,
+                     initial_population: Optional[List[Agent]] = None) -> List[Agent]:
         """Run the evolution process with the given parameters"""
         # Initialize log
         self.logging_port.initialize_log()
@@ -189,7 +190,14 @@ class EvolutionService(EvolutionUseCase):
         self.rewards_history = []
         
         # Initialize population
-        population = self.initialize_population(population_size)
+        if initial_population:
+            population = initial_population
+            # If initial population is smaller than requested size, add more agents
+            if len(population) < population_size:
+                additional_agents = self.initialize_population(population_size - len(population))
+                population.extend(additional_agents)
+        else:
+            population = self.initialize_population(population_size)
         
         # Log start event
         self.logging_port.log_event("Evolution Started", {

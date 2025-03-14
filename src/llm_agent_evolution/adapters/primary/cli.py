@@ -163,6 +163,16 @@ class CLIAdapter:
             if args.seed is None:
                 args.seed = 42  # Use fixed seed for reproducible tests
         
+        # Get context from file if specified
+        context = args.context
+        if args.context_file:
+            try:
+                with open(args.context_file, 'r') as f:
+                    context = f.read()
+            except Exception as e:
+                print(f"Error reading context file: {e}")
+                return 1
+        
         try:
             # Show startup banner
             print("\n" + "=" * 60)
@@ -181,9 +191,17 @@ class CLIAdapter:
             print(f"- Log file: {args.log_file}")
             if args.seed is not None:
                 print(f"- Random seed: {args.seed}")
+            if context:
+                print(f"- Context: {context[:50]}{'...' if len(context) > 50 else ''}")
+            if args.load:
+                print(f"- Loading agent from: {args.load}")
             
             print("\nStarting evolution process...")
             start_time = time.time()
+            
+            # Set context in environment if provided
+            if context:
+                os.environ['AGENT_CONTEXT'] = context
             
             # Progress tracking with rate calculation
             last_count = 0
@@ -217,12 +235,53 @@ class CLIAdapter:
                     last_count = current_count
                     last_print_time = now
             
+            # Load agent if specified
+            initial_population = None
+            if args.load:
+                try:
+                    import tomli
+                    with open(args.load, 'rb') as f:
+                        agent_data = tomli.load(f)
+                    
+                    if 'agent' in agent_data:
+                        agent_info = agent_data['agent']
+                        loaded_agent = Agent(
+                            task_chromosome=Chromosome(
+                                content=agent_info['task_chromosome']['content'],
+                                type=agent_info['task_chromosome']['type']
+                            ),
+                            mate_selection_chromosome=Chromosome(
+                                content=agent_info['mate_selection_chromosome']['content'],
+                                type=agent_info['mate_selection_chromosome']['type']
+                            ),
+                            mutation_chromosome=Chromosome(
+                                content=agent_info['mutation_chromosome']['content'],
+                                type=agent_info['mutation_chromosome']['type']
+                            ),
+                            id=agent_info.get('id'),
+                            reward=agent_info.get('reward')
+                        )
+                        initial_population = [loaded_agent]
+                        print(f"Loaded agent with ID: {loaded_agent.id}")
+                        
+                        # If we're just running inference with a loaded agent
+                        if args.eval_command and not args.max_evaluations:
+                            # Evaluate the loaded agent
+                            reward = self.evolution_use_case.evaluate_agent(loaded_agent)
+                            print(f"\nAgent evaluation complete")
+                            print(f"Reward: {reward}")
+                            return 0
+                except Exception as e:
+                    print(f"Error loading agent: {e}")
+                    return 1
+            
             # Run evolution
             population = self.evolution_use_case.run_evolution(
                 population_size=args.population_size,
                 parallel_agents=args.parallel_agents,
                 max_evaluations=args.max_evaluations,
-                progress_callback=progress_callback
+                progress_callback=progress_callback,
+                initial_population=initial_population
             )
             
             # Calculate total runtime
@@ -247,6 +306,35 @@ class CLIAdapter:
             print("-" * 60)
             print(task_content)
             print("-" * 60)
+            
+            # Save agent if requested
+            if args.save:
+                try:
+                    import tomli_w
+                    agent_data = {
+                        "agent": {
+                            "id": best_agent.id,
+                            "reward": best_agent.reward,
+                            "task_chromosome": {
+                                "content": best_agent.task_chromosome.content,
+                                "type": best_agent.task_chromosome.type
+                            },
+                            "mate_selection_chromosome": {
+                                "content": best_agent.mate_selection_chromosome.content,
+                                "type": best_agent.mate_selection_chromosome.type
+                            },
+                            "mutation_chromosome": {
+                                "content": best_agent.mutation_chromosome.content,
+                                "type": best_agent.mutation_chromosome.type
+                            }
+                        }
+                    }
+                    
+                    with open(args.save, 'wb') as f:
+                        tomli_w.dump(agent_data, f)
+                    print(f"\nBest agent saved to: {args.save}")
+                except Exception as e:
+                    print(f"\nError saving agent: {e}")
             
             # Show summary
             print("\n" + "=" * 60)

@@ -12,6 +12,9 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
+    # Create subparsers for different commands
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    
     # Add eval_command as an optional positional argument to the main parser
     parser.add_argument(
         "eval_command",
@@ -55,7 +58,7 @@ def main():
     )
     
     parser.add_argument(
-        "--log-file", "-l",
+        "--log-file",
         type=str, 
         default="evolution.log",
         help="Log file path"
@@ -89,7 +92,7 @@ def main():
     )
     
     parser.add_argument(
-        "--load", "-l",
+        "--load",
         type=str,
         default=None,
         help="Load a previously saved agent from file"
