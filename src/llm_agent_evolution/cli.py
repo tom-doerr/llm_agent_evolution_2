@@ -61,109 +61,112 @@ def _create_main_parser():
 
 def _add_common_arguments(parser):
     """Add common arguments to a parser"""
-    parser.add_argument(
+    # Helper function to add argument only if it doesn't exist
+    def add_arg_if_not_exists(name, *args, **kwargs):
+        if not any(action.dest == name for action in parser._actions):
+            parser.add_argument(*args, **kwargs)
+    
+    add_arg_if_not_exists('population_size',
         "--population-size", "-p",
         type=int, 
         default=100,
         help="Initial population size"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('parallel_agents',
         "--parallel-agents", "-j",
         type=int, 
         default=10,
         help="Number of agents to evaluate in parallel"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('max_evaluations',
         "--max-evaluations", "-n",
         type=int, 
         default=None,
         help="Maximum number of evaluations to run"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('use_mock',
         "--use-mock", "--mock",
         action="store_true",
         help="Use mock LLM adapter for testing"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('model',
         "--model", "-m",
         type=str, 
         default="openrouter/google/gemini-2.0-flash-001",
         help="LLM model to use"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('log_file',
         "--log-file",
         type=str, 
         default="evolution.log",
         help="Log file path"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('seed',
         "--seed", "-s",
         type=int,
         default=None,
         help="Random seed for reproducibility"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('eval_command',
         "--eval-command", "-e",
         type=str,
         default=None,
         help="Command to run for evaluation"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('quick_test',
         "--quick-test", "-q",
         action="store_true",
         help="Run a quick test with mock LLM"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('save',
         "--save", "-o",
         type=str,
         default=None,
         help="File to save the best result to"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('load',
         "--load", "-l",
         type=str,
         default=None,
         help="Load a previously saved agent from file"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('context',
         "--context", "-c",
         type=str,
         default=None,
         help="Context to pass to the agent (available as AGENT_CONTEXT environment variable)"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('context_file',
         "--context-file", "-cf",
         type=str,
         default=None,
         help="File containing context to pass to the agent"
     )
     
-    parser.add_argument(
+    add_arg_if_not_exists('initial_content',
         "--initial-content", "-i",
         type=str,
         default="",
         help="Initial content for the chromosomes"
     )
     
-    # Only add verbose if it doesn't exist yet
-    if not any(action.dest == 'verbose' for action in parser._actions):
-        parser.add_argument(
-            "--verbose", "-v",
-            action="store_true",
-            help="Enable verbose output"
-        )
+    add_arg_if_not_exists('verbose',
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose output"
+    )
 
 def _add_evolve_subparser(subparsers):
     """Add the evolve subparser"""
