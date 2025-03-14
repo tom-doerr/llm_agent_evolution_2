@@ -16,7 +16,7 @@ def main(args: Optional[List[str]] = None) -> int:
     parsed_args = parser.parse_args(args)
     
     # Handle the command based on arguments
-    if parsed_args.command:
+    if hasattr(parsed_args, 'command') and parsed_args.command:
         # If a specific subcommand was provided, handle it
         if parsed_args.command == "evolve":
             return _handle_evolve_command(parsed_args)
@@ -38,6 +38,13 @@ def _create_main_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
+    # Add eval_command as a positional argument to the main parser
+    parser.add_argument(
+        "eval_command",
+        nargs="?",
+        help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
+    )
+    
     # Add subparsers for different commands
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
     
@@ -46,13 +53,6 @@ def _create_main_parser():
     _add_optimize_subparser(subparsers)
     _add_standalone_subparser(subparsers)
     _add_demo_subparser(subparsers)
-    
-    # Add eval_command as an optional positional argument to the main parser
-    parser.add_argument(
-        "eval_command",
-        nargs="?",
-        help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
-    )
     
     # Add the main arguments to the top-level parser
     _add_common_arguments(parser)
@@ -328,16 +328,17 @@ def _handle_default_command(args):
     
     # If eval_command is specified (either positional or via --eval-command), run the optimizer
     eval_command = None
-    if hasattr(args, 'eval_command'):
+    if hasattr(args, 'eval_command') and args.eval_command:
         eval_command = args.eval_command
     
-    # Check for positional eval_command
+    # Check for positional eval_command from sys.argv if not found in args
     if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
         eval_command = sys.argv[1]
         # Set it in args for _handle_optimize_command
         args.eval_command = eval_command
         
     if eval_command:
+        print(f"Using evaluation command: {eval_command}")
         # Run the universal optimizer with the eval command
         return _handle_optimize_command(args)
     

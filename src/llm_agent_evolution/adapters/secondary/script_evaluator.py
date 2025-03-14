@@ -155,9 +155,17 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                 reward = float(lines[-1].strip())
                 return reward
             except ValueError:
-                error_msg = f"Evaluation script did not return a valid numerical reward: {lines[-1]}"
-                print(f"Error: {error_msg}")
-                raise ValueError(error_msg)
+                # Try to extract a number from the last line
+                import re
+                numbers = re.findall(r"[-+]?\d*\.\d+|\d+", lines[-1])
+                if numbers:
+                    reward = float(numbers[0])
+                    print(f"Warning: Extracted numerical value {reward} from output: {lines[-1]}")
+                    return reward
+                else:
+                    error_msg = f"Evaluation script did not return a valid numerical reward: {lines[-1]}"
+                    print(f"Error: {error_msg}")
+                    raise ValueError(error_msg)
                 
         except subprocess.TimeoutExpired:
             error_msg = f"Evaluation script timed out after {timeout} seconds"

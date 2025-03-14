@@ -7,6 +7,7 @@ from .model import Agent, Chromosome, MAX_CHARS
 CHROMOSOME_SWITCH_PROBABILITY = 0.3  # Probability of switching chromosomes at hotspots
 HOTSPOT_CHARS = ".,;:!?()[]{}'\"\n "  # Punctuation and spaces as hotspots
 TARGET_LENGTH = 23  # Target length for task optimization (used in combine_chromosomes)
+# This is a constant from the spec, not revealing the goal
 
 def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Agent]:
     """

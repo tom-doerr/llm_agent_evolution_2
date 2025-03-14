@@ -91,3 +91,47 @@ def test_cli_without_subcommand():
     assert result.returncode == 0
     assert "Running quick test with mock LLM adapter" in result.stdout
     assert "Starting evolution" in result.stdout
+
+def test_cli_with_eval_command():
+    """Test that the CLI works with an evaluation command"""
+    # Skip this test in CI environments
+    if os.environ.get('CI') == 'true':
+        pytest.skip("Skipping test that requires CLI in CI environment")
+    
+    # Create a simple evaluation script
+    script_content = """#!/usr/bin/env python3
+import sys
+text = sys.stdin.read()
+print(len(text))  # Reward is the length of the text
+"""
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as script_file:
+        script_path = script_file.name
+        script_file.write(script_content)
+    
+    try:
+        # Make the script executable
+        os.chmod(script_path, 0o755)
+        
+        # Run the command with the evaluation command
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution", 
+                f"python {script_path}",  # Positional argument as eval command
+                "--use-mock",
+                "--population-size", "10",
+                "--parallel-agents", "2",
+                "--max-evaluations", "5"
+            ],
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that it ran successfully
+        assert result.returncode == 0
+        assert "Evaluation command: python" in result.stdout
+        assert "Starting optimization" in result.stdout
+    finally:
+        # Clean up
+        if os.path.exists(script_path):
+            os.remove(script_path)

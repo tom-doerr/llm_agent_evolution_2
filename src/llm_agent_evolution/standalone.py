@@ -334,11 +334,11 @@ def run_standalone_optimizer(
         # Initial task chromosome with some content
         task_content = initial_content if initial_content else ""
         
-        # Initial mate selection chromosome with instructions
-        mate_selection_content = "Select the mate with the highest reward."
+        # Initial mate selection chromosome with generic instructions
+        mate_selection_content = "Select the mate with the highest reward. Consider diversity in the population."
         
-        # Initial mutation chromosome with instructions
-        mutation_content = "Improve the content to maximize the evaluation score."
+        # Initial mutation chromosome with generic instructions
+        mutation_content = "Improve the content to maximize the evaluation score. Try different approaches."
         
         agent = Agent(
             task_chromosome=Chromosome(content=task_content, type_="task"),

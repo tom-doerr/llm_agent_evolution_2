@@ -16,25 +16,48 @@ class MockLLMAdapter(LLMPort):
         """Generate a mock mutation for a chromosome"""
         # For task chromosomes, generate random content without leaking the task
         if chromosome.type == "task":
-            # Generate random content
-            options = [
-                "Hello world",
-                "Testing the mutation",
-                "This is a sample output",
-                "Random text for evaluation",
-                "The quick brown fox jumps over the lazy dog"
-            ]
-            content = random.choice(options)
+            # Start with the original content
+            original = chromosome.content
+            
+            # If the original is empty, generate some random content
+            if not original:
+                options = [
+                    "Hello world",
+                    "Testing the mutation",
+                    "This is a sample output",
+                    "Random text for evaluation",
+                    "The quick brown fox jumps over the lazy dog"
+                ]
+                content = random.choice(options)
+            else:
+                # Modify the original content in some way
+                modifications = [
+                    lambda s: s + " " + random.choice(["extra", "more", "additional"]),
+                    lambda s: s.replace(" ", " " + random.choice(["a", "b", "c"]) + " "),
+                    lambda s: s[:len(s)//2] + random.choice(["X", "Y", "Z"]) + s[len(s)//2:],
+                    lambda s: "".join(random.sample(s, len(s))) if len(s) > 1 else s,
+                    lambda s: s * 2 if len(s) < 10 else s
+                ]
+                content = random.choice(modifications)(original)
         else:
             # For other chromosome types, generate simple instructions
-            options = [
-                "Select the candidate with the highest reward",
-                "Choose a mate with the most 'a's in their task chromosome",
-                "Prefer candidates with shorter chromosomes",
-                "Try to add more 'a' characters to the chromosome",
-                "Keep the chromosome short and focused"
-            ]
-            content = random.choice(options)
+            if random.random() < 0.7 and chromosome.content:
+                # 70% chance to keep existing content with small modifications
+                content = chromosome.content
+                if "reward" not in content:
+                    content += " Consider the reward."
+                if "diversity" not in content:
+                    content += " Maintain diversity."
+            else:
+                # 30% chance to generate new content
+                options = [
+                    "Select the candidate with the highest reward",
+                    "Choose a mate with diverse characteristics",
+                    "Prefer candidates with better performance",
+                    "Try to improve the chromosome with each mutation",
+                    "Keep the chromosome focused on the evaluation criteria"
+                ]
+                content = random.choice(options)
         
         return Chromosome(
             content=content,
@@ -70,6 +93,10 @@ class MockLLMAdapter(LLMPort):
         
         # Calculate reward
         reward = a_count - length_penalty
+        
+        # Add some noise to make it more realistic
+        noise = random.uniform(-0.1, 0.1)
+        reward = max(0, reward + noise)
         
         return reward
     

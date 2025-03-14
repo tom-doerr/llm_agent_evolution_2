@@ -158,6 +158,32 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
         assert result.returncode == 0
         assert "Context: This is stdin input" in result.stdout
         
+        # Now test with direct pipe without a shell script
+        # Create a process to generate input
+        input_process = subprocess.Popen(
+            ["echo", "Direct pipe test"],
+            stdout=subprocess.PIPE
+        )
+        
+        # Pipe the output to our command
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution",
+                "--use-mock",
+                "--eval-command", f"python {script_path}",
+                "--population-size", "5",
+                "--parallel-agents", "2",
+                "--max-evaluations", "10"
+            ],
+            stdin=input_process.stdout,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that it ran successfully
+        assert result.returncode == 0
+        assert "Context: Direct pipe test" in result.stdout
+        
     finally:
         # Clean up
         if os.path.exists(script_path):

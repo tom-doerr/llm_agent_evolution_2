@@ -22,18 +22,6 @@ from llm_agent_evolution.universal_optimizer_core import UniversalOptimizer
 # Import the core optimizer class
 from llm_agent_evolution.universal_optimizer_core import UniversalOptimizer
 
-def progress_bar(current: int, total: Optional[int] = None) -> None:
-    """Display a simple progress bar"""
-    if total:
-        percent = min(100, int(current / total * 100))
-        bar_length = 30
-        filled_length = int(bar_length * current / total)
-        bar = '█' * filled_length + '░' * (bar_length - filled_length)
-        sys.stdout.write(f"\r[{bar}] {percent}% ({current}/{total})")
-    else:
-        sys.stdout.write(f"\rEvaluations: {current}")
-    sys.stdout.flush()
-
 def run_optimizer(
     eval_script: str,
     population_size: int = 50,
@@ -45,8 +33,8 @@ def run_optimizer(
     random_seed: Optional[int] = None,
     script_timeout: int = 30,
     initial_content: str = "",
-    output_file: Optional[str] = None,
-    output_format: str = "text",
+    save: Optional[str] = None,
+    output_format: str = "toml",
     max_chars: int = 1000,
     verbose: bool = False,
     eval_command: Optional[str] = None
@@ -108,14 +96,14 @@ def run_optimizer(
         print("=" * 40)
         
         # Write to save file if specified
-        if output_file:
+        if save:
             if output_format == "text":
-                with open(output_file, 'w') as f:
+                with open(save, 'w') as f:
                     f.write(results['best_agent']['content'])
             else:  # toml
-                with open(output_file, 'wb') as f:
+                with open(save, 'wb') as f:
                     tomli_w.dump(results, f)
-            print(f"\nResults saved to {output_file}")
+            print(f"\nResults saved to {save}")
     else:
         print("\nNo valid results found")
     
@@ -218,18 +206,18 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "--output-file",
+        "--save", "-o",
         type=str,
         default=None,
-        help="File to write the best result to"
+        help="File to save the best result to"
     )
     
     parser.add_argument(
         "--output-format",
         type=str,
-        choices=["text", "json"],
-        default="text",
-        help="Output format (default: text)"
+        choices=["text", "toml"],
+        default="toml",
+        help="Output format (default: toml)"
     )
     
     parser.add_argument(
@@ -268,7 +256,7 @@ if __name__ == "__main__":
         random_seed=args.seed,
         script_timeout=args.script_timeout,
         initial_content=initial_content,
-        output_file=args.output_file,
+        save=args.save,
         output_format=args.output_format,
         max_chars=args.max_chars,
         verbose=args.verbose

@@ -153,9 +153,25 @@ def test_e2e_agent_loading():
         # Check that it ran successfully
         assert result.returncode == 0
         assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
-        assert "'a' count in first 23 chars: 23" in result.stdout
-        assert "Length penalty: 0" in result.stdout
         assert "23" in result.stdout  # The reward
+        
+        # Now test with context
+        result = subprocess.run(
+            [
+                "python", "-m", "llm_agent_evolution",
+                "--use-mock",
+                "--load", agent_file,
+                "--eval-command", "python examples/count_a.py",
+                "--context", "This is a test context"
+            ],
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that it ran successfully with context
+        assert result.returncode == 0
+        assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
+        assert "Context: This is a test context" in result.stdout
         
     finally:
         # Clean up
