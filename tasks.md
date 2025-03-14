@@ -1,6 +1,17 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+# fix the cannot access local variable argparse error when runnnign llm evolve 
+# add end to end tests that are actually running the llm-evolve command using real llm tools so we can detect errors like that in the future
+# make it so i can also run it without needing to use the optimize command in the cli, maybe make it the default
+# is there code duplication?
+# how many chromosomes do we currently have?
+# how is the mating working currently?
+# what are the scripts in root for? which of those can i delete?
+# please merge the universal optimize readme with the main readme
+# do we have a way to save our optimized agents using the cli?
+# once we optimized an agent, how can we use it in the cli without specifying the feedback script? so i want it to just output the text that was previously sent to the stdin of the specified script
+# do we have a way four our script to read from stdin? so that we could pass that to the agent as input? e.g. as context or the task to work in. 
 
 # fix test errors
 All tests are now passing. Fixed issues:
