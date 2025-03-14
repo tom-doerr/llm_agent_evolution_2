@@ -34,18 +34,6 @@ def progress_bar(current: int, total: Optional[int] = None) -> None:
         sys.stdout.write(f"\rEvaluations: {current}")
     sys.stdout.flush()
 
-def progress_bar(current: int, total: Optional[int] = None) -> None:
-    """Display a simple progress bar"""
-    if total:
-        percent = min(100, int(current / total * 100))
-        bar_length = 30
-        filled_length = int(bar_length * current / total)
-        bar = '█' * filled_length + '░' * (bar_length - filled_length)
-        sys.stdout.write(f"\r[{bar}] {percent}% ({current}/{total})")
-    else:
-        sys.stdout.write(f"\rEvaluations: {current}")
-    sys.stdout.flush()
-
 def run_optimizer(
     eval_script: str,
     population_size: int = 50,

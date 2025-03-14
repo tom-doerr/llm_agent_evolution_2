@@ -33,7 +33,7 @@ def print_agent(agent: Agent, detailed: bool = False):
         print("\nMutation Chromosome:")
         print(f"{agent.mutation_chromosome.content}")
 
-def run_evolution_demo(use_mock: bool = False, initial_content: str = "a"):
+def run_evolution_demo(use_mock: bool = False, initial_content: str = "a") -> int:
     """Run a detailed demonstration of the evolution process"""
     # Create LLM adapter
     if use_mock:
