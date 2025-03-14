@@ -32,7 +32,7 @@ def main():
     env["RANDOM_SEED"] = str(args.seed)
     
     # Run the Python module directly
-    cmd = [sys.executable, "-m", "src.llm_agent_evolution"]
+    cmd = [sys.executable, "-m", "llm_agent_evolution"]
     
     try:
         subprocess.run(cmd, env=env, check=True)
