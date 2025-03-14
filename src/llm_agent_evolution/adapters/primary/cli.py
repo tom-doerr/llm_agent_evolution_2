@@ -94,6 +94,14 @@ class CLIAdapter:
             print(f"Std deviation: {stats.get('std_dev'):.2f}")
             print(f"Best reward: {stats.get('best'):.2f}")
             print(f"Worst reward: {stats.get('worst'):.2f}")
+            
+            # Display improvement metrics if available
+            if stats.get('improvement_rate') is not None:
+                print(f"Improvement rate: {stats.get('improvement_rate'):.4f} per minute")
+                
+            if stats.get('time_since_last_best') is not None:
+                minutes = stats.get('time_since_last_best') / 60
+                print(f"Time since last best: {minutes:.2f} minutes")
         
         # Recent window stats
         window_stats = stats.get('window_stats', {})

@@ -43,6 +43,41 @@ def test_combine_chromosomes():
     assert result.type == "task"
     assert len(result.content) > 0
 
+def test_combine_chromosomes_with_empty_content():
+    """Test combining chromosomes when one has empty content"""
+    parent1 = Chromosome(content="", type="task")
+    parent2 = Chromosome(content="This is the second chromosome.", type="task")
+    
+    result = combine_chromosomes(parent1, parent2)
+    assert result.content == parent2.content
+    
+    # Test the reverse case
+    result = combine_chromosomes(parent2, parent1)
+    assert result.content == parent2.content
+    
+    # Test both empty
+    parent1 = Chromosome(content="", type="task")
+    parent2 = Chromosome(content="", type="task")
+    result = combine_chromosomes(parent1, parent2)
+    assert result.content == ""
+
+def test_combine_task_chromosomes_length_handling():
+    """Test that task chromosomes are handled appropriately for length"""
+    # Create a parent with optimal length
+    parent1 = Chromosome(content="a" * TARGET_LENGTH, type="task")
+    # Create a parent with too much content
+    parent2 = Chromosome(content="a" * (TARGET_LENGTH * 2), type="task")
+    
+    # Run multiple combinations to check statistical properties
+    results = []
+    for _ in range(20):
+        result = combine_chromosomes(parent1, parent2)
+        results.append(len(result.content))
+    
+    # The average length should be closer to TARGET_LENGTH than to the longer parent
+    avg_length = sum(results) / len(results)
+    assert abs(avg_length - TARGET_LENGTH) < abs(avg_length - len(parent2.content))
+
 def test_mate_agents():
     """Test mating two agents"""
     agent1 = Agent(
@@ -81,3 +116,43 @@ def test_select_parents_pareto():
     parents = select_parents_pareto(population, 5)
     assert len(parents) == 5
     assert all(isinstance(p, Agent) for p in parents)
+    
+    # Run multiple selections to verify statistical properties
+    selections = []
+    for _ in range(100):
+        selected = select_parents_pareto(population, 1)[0]
+        selections.append(selected.reward)
+    
+    # Higher rewards should be selected more frequently
+    mean_selection = sum(selections) / len(selections)
+    assert mean_selection > 45  # Should be biased toward higher rewards
+
+def test_select_parents_with_negative_rewards():
+    """Test parent selection with negative rewards"""
+    # Create a population with negative rewards
+    population = [
+        Agent(
+            task_chromosome=Chromosome(content=f"task{i}", type="task"),
+            mate_selection_chromosome=Chromosome(content=f"mate{i}", type="mate_selection"),
+            mutation_chromosome=Chromosome(content=f"mutation{i}", type="mutation"),
+        ) for i in range(10)
+    ]
+    
+    # Assign rewards including negative values
+    rewards = [-50, -30, -10, 0, 10, 20, 30, 40, 50, 60]
+    for i, agent in enumerate(population):
+        agent.reward = rewards[i]
+    
+    # Select parents
+    parents = select_parents_pareto(population, 5)
+    assert len(parents) == 5
+    
+    # Run multiple selections to verify statistical properties
+    selections = []
+    for _ in range(100):
+        selected = select_parents_pareto(population, 1)[0]
+        selections.append(selected.reward)
+    
+    # Higher rewards should be selected more frequently
+    mean_selection = sum(selections) / len(selections)
+    assert mean_selection > 0  # Should be biased toward higher rewards

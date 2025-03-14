@@ -60,3 +60,8 @@ class StatisticsPort(ABC):
     def get_sliding_window_stats(self, window_size: int = 100) -> Dict[str, Any]:
         """Get statistics for the sliding window of recent evaluations"""
         pass
+    
+    @abstractmethod
+    def get_improvement_history(self) -> List[Dict[str, Any]]:
+        """Get the history of improvements for visualization"""
+        pass

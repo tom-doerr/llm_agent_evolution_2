@@ -132,9 +132,54 @@ class VisualizationAdapter:
         
         return filename
     
+    def plot_improvement_rate(self, improvement_history: List[Dict[str, Any]]) -> str:
+        """Plot improvement rate over time"""
+        if not improvement_history:
+            return None
+            
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        # Extract data
+        timestamps = [entry['timestamp'] for entry in improvement_history]
+        improvements = [entry['improvement'] for entry in improvement_history]
+        
+        # Convert timestamps to relative time in minutes
+        start_time = min(timestamps)
+        relative_times = [(t - start_time) / 60 for t in timestamps]
+        
+        # Plot improvements
+        ax.plot(relative_times, improvements, 'o-', color='green', linewidth=2)
+        
+        # Calculate and plot moving average if we have enough data
+        window_size = min(5, len(improvements))
+        if len(improvements) >= window_size:
+            moving_avg = []
+            for i in range(len(improvements) - window_size + 1):
+                moving_avg.append(np.mean(improvements[i:i+window_size]))
+            
+            # Plot moving average at the correct x positions
+            ax.plot(relative_times[window_size-1:], moving_avg, 
+                   linewidth=2, color='blue', label=f'Moving average (window={window_size})')
+        
+        # Add labels and title
+        ax.set_xlabel('Time (minutes)')
+        ax.set_ylabel('Improvement')
+        ax.set_title('Improvement Rate Over Time')
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        
+        # Save the figure
+        filename = f"{self.output_dir}/improvement_rate_{self.timestamp}.png"
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close(fig)
+        
+        return filename
+    
     def create_evolution_dashboard(self, stats: Dict[str, Any], 
                                   rewards_history: List[float],
-                                  top_agents: List[Dict[str, Any]]) -> List[str]:
+                                  top_agents: List[Dict[str, Any]],
+                                  improvement_history: List[Dict[str, Any]] = None) -> List[str]:
         """Create a comprehensive dashboard with multiple visualizations"""
         filenames = []
         
@@ -153,5 +198,11 @@ class VisualizationAdapter:
             top_plot = self.plot_top_agents_comparison(top_agents)
             if top_plot:
                 filenames.append(top_plot)
+        
+        # Plot improvement rate
+        if improvement_history:
+            improvement_plot = self.plot_improvement_rate(improvement_history)
+            if improvement_plot:
+                filenames.append(improvement_plot)
         
         return filenames

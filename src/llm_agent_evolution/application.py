@@ -265,11 +265,15 @@ class EvolutionService(EvolutionUseCase):
                 for agent in sorted_agents[:10]
             ]
             
+            # Get improvement history
+            improvement_history = self.statistics_port.get_improvement_history()
+            
             # Create dashboard
             viz_files = self.visualization.create_evolution_dashboard(
                 self.get_population_stats(population),
                 self.rewards_history,
-                top_agents
+                top_agents,
+                improvement_history
             )
             
             # Log visualization files

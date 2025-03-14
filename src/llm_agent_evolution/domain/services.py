@@ -6,11 +6,14 @@ from .model import Agent, Chromosome
 # Constants
 CHROMOSOME_SWITCH_PROBABILITY = 0.3  # Probability of switching chromosomes at hotspots
 HOTSPOT_CHARS = ".,;:!?()[]{}'\"\n "  # Punctuation and spaces as hotspots
+TARGET_LENGTH = 23  # Target length for the hidden goal (from LLM adapter)
 
 def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Agent]:
     """
     Select parents using Pareto distribution weighting by fitness^2
     Uses weighted sampling without replacement
+    
+    Improved to better handle negative rewards and ensure diversity
     """
     if not population or num_parents <= 0:
         return []
@@ -20,16 +23,20 @@ def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Age
     if not valid_agents:
         return random.sample(population, min(num_parents, len(population)))
     
-    # Square the rewards for Pareto distribution and handle negative rewards
-    min_reward = min(agent.reward for agent in valid_agents)
-    adjusted_rewards = [(agent.reward - min_reward + 1) ** 2 for agent in valid_agents]
+    # Get reward statistics
+    rewards = [agent.reward for agent in valid_agents]
+    min_reward = min(rewards)
+    max_reward = max(rewards)
+    reward_range = max(1.0, max_reward - min_reward)  # Avoid division by zero
+    
+    # Normalize rewards to [0,1] range and then square them for Pareto distribution
+    # Add a small epsilon to ensure even worst agents have some chance
+    epsilon = 0.01
+    adjusted_rewards = [((agent.reward - min_reward) / reward_range + epsilon) ** 2 
+                        for agent in valid_agents]
     
     # Normalize weights
     total_weight = sum(adjusted_rewards)
-    if total_weight == 0:
-        # If all weights are zero, use uniform distribution
-        return random.sample(valid_agents, min(num_parents, len(valid_agents)))
-    
     weights = [w / total_weight for w in adjusted_rewards]
     
     # Weighted sampling without replacement
@@ -40,52 +47,106 @@ def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Age
         p=weights
     )
     
-    return [valid_agents[i] for i in selected_indices]
+    selected_parents = [valid_agents[i] for i in selected_indices]
+    
+    # Ensure diversity by adding some random agents if we have enough parents
+    if len(selected_parents) < num_parents and len(valid_agents) > len(selected_parents):
+        remaining_agents = [a for a in valid_agents if a not in selected_parents]
+        random_parents = random.sample(
+            remaining_agents, 
+            min(num_parents - len(selected_parents), len(remaining_agents))
+        )
+        selected_parents.extend(random_parents)
+    
+    return selected_parents
 
 def combine_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
     """
     Combine two chromosomes by switching at hotspots
     Designed to have approximately one chromosome jump per chromosome
-    """
-    if not parent1.content or not parent2.content:
-        return Chromosome(
-            content=parent1.content or parent2.content,
-            type=parent1.type
-        )
     
-    # Find all hotspots in parent1's content
-    hotspots = [i for i, char in enumerate(parent1.content) if char in HOTSPOT_CHARS]
+    Enhanced to handle different length chromosomes and ensure more effective combinations
+    """
+    if not parent1.content and not parent2.content:
+        return Chromosome(content="", type=parent1.type)
+    
+    if not parent1.content:
+        return Chromosome(content=parent2.content, type=parent1.type)
+    
+    if not parent2.content:
+        return Chromosome(content=parent1.content, type=parent1.type)
+    
+    # Determine which parent has more valuable content based on length
+    # For task chromosomes, we prefer shorter content (up to TARGET_LENGTH)
+    if parent1.type == "task":
+        # For task chromosomes, prefer content closer to TARGET_LENGTH
+        p1_value = max(0, TARGET_LENGTH - abs(len(parent1.content) - TARGET_LENGTH))
+        p2_value = max(0, TARGET_LENGTH - abs(len(parent2.content) - TARGET_LENGTH))
+        
+        # If one parent is significantly better, bias toward it
+        if p1_value > p2_value * 1.5:
+            primary_parent, secondary_parent = parent1, parent2
+        elif p2_value > p1_value * 1.5:
+            primary_parent, secondary_parent = parent2, parent1
+        else:
+            # Otherwise choose randomly
+            if random.random() < 0.5:
+                primary_parent, secondary_parent = parent1, parent2
+            else:
+                primary_parent, secondary_parent = parent2, parent1
+    else:
+        # For other chromosome types, randomly select primary parent
+        if random.random() < 0.5:
+            primary_parent, secondary_parent = parent1, parent2
+        else:
+            primary_parent, secondary_parent = parent2, parent1
+    
+    # Find all hotspots in primary parent's content
+    hotspots = [i for i, char in enumerate(primary_parent.content) if char in HOTSPOT_CHARS]
     if not hotspots:
         # If no hotspots, add some arbitrary points
-        content_len = len(parent1.content)
+        content_len = len(primary_parent.content)
         hotspots = [i for i in range(0, content_len, max(1, content_len // 5))]
     
-    # Start with parent1's content
-    result = list(parent1.content)
-    current_parent = 1
+    # Start with primary parent's content
+    result = list(primary_parent.content)
+    using_primary = True
     
-    # Calculate number of switches based on content length to average one switch per chromosome
-    content_len = len(parent1.content)
+    # Calculate number of switches based on content length
+    content_len = len(primary_parent.content)
     target_switches = max(1, content_len // 100)  # Aim for ~1 switch per 100 chars
     
     # Sort hotspots and select a subset for switching
     hotspots.sort()
-    switch_points = sorted(random.sample(hotspots, min(target_switches, len(hotspots))))
+    if len(hotspots) > 0:
+        switch_points = sorted(random.sample(hotspots, min(target_switches, len(hotspots))))
+        
+        # Perform the switches
+        for point in switch_points:
+            if random.random() < CHROMOSOME_SWITCH_PROBABILITY:
+                using_primary = not using_primary
+                
+                if not using_primary and point < len(secondary_parent.content):
+                    # Calculate how much content to take from secondary parent
+                    if point < len(secondary_parent.content):
+                        # Take content from secondary parent from this point
+                        secondary_content = list(secondary_parent.content[point:])
+                        
+                        # Adjust result length
+                        if point + len(secondary_content) > len(result):
+                            result = result[:point] + secondary_content
+                        else:
+                            result[point:point+len(secondary_content)] = secondary_content
     
-    # Perform the switches
-    for point in switch_points:
-        if random.random() < CHROMOSOME_SWITCH_PROBABILITY:
-            current_parent = 3 - current_parent  # Toggle between 1 and 2
-            if current_parent == 2:
-                # Switch to parent2's content from this point
-                remaining = len(parent2.content) - point
-                if remaining > 0:
-                    result[point:] = list(parent2.content[point:min(len(parent2.content), point + len(result) - point)])
+    # For task chromosomes, ensure we don't exceed TARGET_LENGTH by too much
+    if parent1.type == "task":
+        combined_content = ''.join(result)
+        if len(combined_content) > TARGET_LENGTH * 1.5:  # Allow some flexibility
+            # Truncate to a reasonable length
+            combined_content = combined_content[:TARGET_LENGTH + random.randint(0, 5)]
+        return Chromosome(content=combined_content, type=parent1.type)
     
-    return Chromosome(
-        content=''.join(result),
-        type=parent1.type
-    )
+    return Chromosome(content=''.join(result), type=parent1.type)
 
 def mate_agents(parent1: Agent, parent2: Agent) -> Agent:
     """
