@@ -28,6 +28,7 @@ def main(seed=42):
     args.quick_test = True
     args.seed = seed
     args.log_file = "quick_test.log"
+    args.no_visualization = False  # Enable visualization for quick test
     
     # Store original parse_args method
     original_parse_args = cli.parse_args

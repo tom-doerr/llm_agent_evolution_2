@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 from typing import List, Dict, Any
 import time
 from llm_agent_evolution.ports.primary import EvolutionUseCase
@@ -71,6 +72,12 @@ class CLIAdapter:
             help="Run a quick test with mock LLM (100 evaluations)"
         )
         
+        parser.add_argument(
+            "--no-visualization",
+            action="store_true",
+            help="Disable visualization generation"
+        )
+        
         return parser.parse_args()
     
     def display_stats(self, stats: Dict[str, Any]) -> None:
@@ -98,6 +105,19 @@ class CLIAdapter:
                 print(f"Mean reward: {window_stats.get('mean'):.2f}")
                 print(f"Median reward: {window_stats.get('median'):.2f}")
                 print(f"Std deviation: {window_stats.get('std_dev'):.2f}")
+        
+        # Check for visualizations
+        viz_dir = "visualizations"
+        if os.path.exists(viz_dir) and os.listdir(viz_dir):
+            print(f"\nVisualizations available in: {os.path.abspath(viz_dir)}")
+            print("Latest visualization files:")
+            files = sorted(
+                [f for f in os.listdir(viz_dir) if f.endswith('.png')],
+                key=lambda x: os.path.getmtime(os.path.join(viz_dir, x)),
+                reverse=True
+            )
+            for file in files[:3]:  # Show the 3 most recent files
+                print(f"- {file}")
     
     def run(self) -> int:
         """Run the CLI application"""

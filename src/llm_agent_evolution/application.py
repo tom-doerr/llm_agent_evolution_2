@@ -15,6 +15,7 @@ from .adapters.secondary.llm import DSPyLLMAdapter
 from .adapters.secondary.mock_llm import MockLLMAdapter
 from .adapters.secondary.logging import FileLoggingAdapter
 from .adapters.secondary.statistics import StatisticsAdapter
+from .adapters.secondary.visualization import VisualizationAdapter
 from .adapters.primary.cli import CLIAdapter
 
 class EvolutionService(EvolutionUseCase):
@@ -23,13 +24,16 @@ class EvolutionService(EvolutionUseCase):
     def __init__(self, 
                 llm_port: LLMPort, 
                 logging_port: LoggingPort, 
-                statistics_port: StatisticsPort):
+                statistics_port: StatisticsPort,
+                visualization_adapter: Optional = None):
         """Initialize the evolution service with required ports"""
         self.llm_port = llm_port
         self.logging_port = logging_port
         self.statistics_port = statistics_port
+        self.visualization = visualization_adapter
         self.population_lock = threading.Lock()
         self.stop_event = threading.Event()
+        self.rewards_history = []  # Track rewards over time for visualization
     
     def initialize_population(self, size: int) -> List[Agent]:
         """Initialize a population of the given size with empty chromosomes"""
@@ -95,6 +99,10 @@ class EvolutionService(EvolutionUseCase):
         
         # Track the reward in statistics
         self.statistics_port.track_reward(reward)
+        
+        # Track reward history for visualization
+        with self.population_lock:
+            self.rewards_history.append(reward)
         
         # Log the evaluation
         self.logging_port.log_evaluation(agent)
@@ -183,6 +191,9 @@ class EvolutionService(EvolutionUseCase):
         # Initialize log
         self.logging_port.initialize_log()
         
+        # Reset rewards history
+        self.rewards_history = []
+        
         # Initialize population
         population = self.initialize_population(population_size)
         
@@ -240,12 +251,40 @@ class EvolutionService(EvolutionUseCase):
             "final_population_size": len(population)
         })
         
+        # Generate visualizations if adapter is available
+        if self.visualization:
+            # Get top agents for visualization
+            sorted_agents = sorted(
+                population,
+                key=lambda a: a.reward if a.reward is not None else float('-inf'),
+                reverse=True
+            )
+            top_agents = [
+                {"id": agent.id, "reward": agent.reward, 
+                 "task_length": len(agent.task_chromosome.content)}
+                for agent in sorted_agents[:10]
+            ]
+            
+            # Create dashboard
+            viz_files = self.visualization.create_evolution_dashboard(
+                self.get_population_stats(population),
+                self.rewards_history,
+                top_agents
+            )
+            
+            # Log visualization files
+            if viz_files:
+                self.logging_port.log_event("Visualizations Generated", {
+                    "files": viz_files
+                })
+        
         return population
 
 def create_application(model_name: str = "openrouter/google/gemini-2.0-flash-001",
                       log_file: str = "evolution.log",
                       use_mock: bool = False,
-                      random_seed: Optional[int] = None) -> CLIAdapter:
+                      random_seed: Optional[int] = None,
+                      enable_visualization: bool = True) -> CLIAdapter:
     """Create and wire the application components"""
     # Create adapters
     if use_mock:
@@ -256,11 +295,17 @@ def create_application(model_name: str = "openrouter/google/gemini-2.0-flash-001
     logging_adapter = FileLoggingAdapter(log_file=log_file)
     statistics_adapter = StatisticsAdapter()
     
+    # Create visualization adapter if enabled
+    visualization_adapter = None
+    if enable_visualization:
+        visualization_adapter = VisualizationAdapter()
+    
     # Create evolution service
     evolution_service = EvolutionService(
         llm_port=llm_adapter,
         logging_port=logging_adapter,
-        statistics_port=statistics_adapter
+        statistics_port=statistics_adapter,
+        visualization_adapter=visualization_adapter
     )
     
     # Create CLI adapter
@@ -284,6 +329,8 @@ def main():
                        default=int(os.environ.get("PARALLEL_AGENTS", "10")))
     parser.add_argument("--max-evaluations", type=int, 
                        default=int(os.environ.get("MAX_EVALUATIONS", "0")) or None)
+    parser.add_argument("--no-visualization", action="store_true", 
+                       help="Disable visualization generation")
     
     # Check if USE_MOCK is set in environment
     if os.environ.get("USE_MOCK") == "1":
@@ -297,7 +344,8 @@ def main():
         model_name=args.model, 
         log_file=args.log_file,
         use_mock=args.use_mock,
-        random_seed=args.seed
+        random_seed=args.seed,
+        enable_visualization=not args.no_visualization
     )
     
     # Run the application
