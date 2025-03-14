@@ -52,25 +52,31 @@ class EvolutionService:
         return mate_agents(parent1, parent2)
     
     def mutate_agent(self, agent: Agent) -> Agent:
-        """
-        Apply mutation to the agent using its mutation chromosome as instructions
-        Per spec, mutation should be indirect through merging, but we need some variation
-        """
+        """Apply mutation to the agent using its mutation chromosome as instructions"""
         # Use the agent's mutation chromosome as instructions
         mutation_instructions = agent.mutation_chromosome.content
         
-        # Apply mutation to task chromosome
-        task_chromosome = self.llm_adapter.generate_mutation(
-            agent.task_chromosome,
-            mutation_instructions
-        )
-        
-        # Create new agent with mutated task chromosome
-        return Agent(
-            task_chromosome=task_chromosome,
-            mate_selection_chromosome=agent.mate_selection_chromosome,
-            mutation_chromosome=agent.mutation_chromosome
-        )
+        try:
+            # Apply mutation to task chromosome
+            task_chromosome = self.llm_adapter.generate_mutation(
+                agent.task_chromosome,
+                mutation_instructions
+            )
+            
+            # Create new agent with mutated task chromosome
+            return Agent(
+                task_chromosome=task_chromosome,
+                mate_selection_chromosome=agent.mate_selection_chromosome,
+                mutation_chromosome=agent.mutation_chromosome
+            )
+        except Exception as e:
+            print(f"Mutation error: {e}")
+            # Return a copy of the original agent if mutation fails
+            return Agent(
+                task_chromosome=Chromosome(content=agent.task_chromosome.content, type="task"),
+                mate_selection_chromosome=Chromosome(content=agent.mate_selection_chromosome.content, type="mate_selection"),
+                mutation_chromosome=Chromosome(content=agent.mutation_chromosome.content, type="mutation")
+            )
     
     def evaluate_agent(self, agent: Agent) -> float:
         """Evaluate an agent and return its reward"""
