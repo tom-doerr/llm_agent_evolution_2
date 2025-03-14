@@ -239,7 +239,8 @@ class UniversalOptimizer:
                     self.population.append(mutated_agent)
                     
                     # If population exceeds limit, remove the worst agent
-                    if len(self.population) > 1000000:  # MAX_POPULATION_SIZE
+                    from llm_agent_evolution.domain.model import MAX_POPULATION_SIZE
+                    if len(self.population) > MAX_POPULATION_SIZE:
                         # Sort by reward (None rewards are treated as worst)
                         sorted_population = sorted(
                             self.population,
@@ -247,7 +248,7 @@ class UniversalOptimizer:
                             reverse=True
                         )
                         # Keep only the top agents
-                        self.population = sorted_population[:1000000]  # MAX_POPULATION_SIZE
+                        self.population = sorted_population[:MAX_POPULATION_SIZE]
                         
                     # Limit verbose output to first N agents
                     if self.verbose and self.verbose_agent_count >= self.max_verbose_agents and show_verbose:
