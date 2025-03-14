@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
-from llm_agent_evolution.ports.secondary.script_evaluator import ScriptEvaluatorPort
+from llm_agent_evolution.ports.secondary import ScriptEvaluatorPort
 
 class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
     """Adapter for evaluating agent outputs using external scripts"""
