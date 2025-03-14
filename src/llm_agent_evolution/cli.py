@@ -4,8 +4,9 @@ Command-line interface for the LLM Agent Evolution package
 import sys
 import os
 import argparse
+from typing import List, Optional
 
-def main():
+def main(args: Optional[List[str]] = None) -> int:
     """Main CLI entry point"""
     # Create the argument parser
     parser = _create_main_parser()
@@ -20,26 +21,22 @@ def main():
     _add_demo_subparser(subparsers)
     
     # Parse arguments and handle commands
-    args = parser.parse_args()
+    parsed_args = parser.parse_args(args)
     
     # Handle default command
-    if not args.command:
-        args.command = "evolve"
-        # This allows running without the explicit 'evolve' subcommand
-    
-    # Remove subcommand from sys.argv if it's 'evolve' to avoid unrecognized argument error
-    if args.command == "evolve" and len(sys.argv) > 1 and sys.argv[1] == "evolve":
-        sys.argv.remove("evolve")
+    if not parsed_args.command:
+        parser.print_help()
+        return 1
     
     # Dispatch to the appropriate command handler
-    if args.command == "evolve":
-        return _handle_evolve_command(args)
-    elif args.command == "optimize":
-        return _handle_optimize_command(args)
-    elif args.command == "standalone":
-        return _handle_standalone_command(args)
-    elif args.command == "demo":
-        return _handle_demo_command(args)
+    if parsed_args.command == "evolve":
+        return _handle_evolve_command(parsed_args)
+    elif parsed_args.command == "optimize":
+        return _handle_optimize_command(parsed_args)
+    elif parsed_args.command == "standalone":
+        return _handle_standalone_command(parsed_args)
+    elif parsed_args.command == "demo":
+        return _handle_demo_command(parsed_args)
     else:
         parser.print_help()
         return 1
@@ -308,30 +305,6 @@ def _add_demo_subparser(subparsers):
         help="Initial content for task chromosome"
     )
     
-    # Parse arguments and handle commands
-    args = parser.parse_args()
-    
-    # Handle default command
-    if not args.command:
-        args.command = "evolve"
-        # This allows running without the explicit 'evolve' subcommand
-    
-    # Remove subcommand from sys.argv if it's 'evolve' to avoid unrecognized argument error
-    if args.command == "evolve" and len(sys.argv) > 1 and sys.argv[1] == "evolve":
-        sys.argv.remove("evolve")
-    
-    # Dispatch to the appropriate command handler
-    if args.command == "evolve":
-        return _handle_evolve_command(args)
-    elif args.command == "optimize":
-        return _handle_optimize_command(args)
-    elif args.command == "standalone":
-        return _handle_standalone_command(args)
-    elif args.command == "demo":
-        return _handle_demo_command(args)
-    else:
-        parser.print_help()
-        return 1
 
 def _handle_evolve_command(args):
     """Handle the evolve command"""

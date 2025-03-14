@@ -152,7 +152,7 @@ def test_e2e_agent_loading():
         
         # Check that it ran successfully
         assert result.returncode == 0
-        assert "Text: 'aaaaaaaaaaaaaaaaaaaaaaa'" in result.stdout
+        assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
         assert "'a' count in first 23 chars: 23" in result.stdout
         assert "Length penalty: 0" in result.stdout
         assert "23" in result.stdout  # The reward
