@@ -275,7 +275,9 @@ def main():
     parser.add_argument("--model", default=os.environ.get("MODEL", "openrouter/google/gemini-2.0-flash-001"))
     parser.add_argument("--log-file", default=os.environ.get("LOG_FILE", "evolution.log"))
     parser.add_argument("--use-mock", action="store_true", help="Use mock LLM adapter for testing")
-    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument("--seed", type=int, 
+                       default=int(os.environ.get("RANDOM_SEED", "0")) or None, 
+                       help="Random seed for reproducibility")
     parser.add_argument("--population-size", type=int, 
                        default=int(os.environ.get("POPULATION_SIZE", "100")))
     parser.add_argument("--parallel-agents", type=int, 
@@ -285,7 +287,6 @@ def main():
     
     # Check if USE_MOCK is set in environment
     if os.environ.get("USE_MOCK") == "1":
-        os.environ["USE_MOCK"] = "1"
         parser.set_defaults(use_mock=True)
     
     # Only parse known args to get these values

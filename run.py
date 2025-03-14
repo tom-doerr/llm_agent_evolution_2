@@ -25,14 +25,18 @@ def main():
     run_parser.add_argument("--max-evaluations", type=int, default=None, help="Maximum evaluations")
     run_parser.add_argument("--use-mock", action="store_true", help="Use mock LLM")
     run_parser.add_argument("--model", default="openrouter/google/gemini-2.0-flash-001", help="LLM model name")
+    run_parser.add_argument("--log-file", default="evolution.log", help="Log file path")
     
     args = parser.parse_args()
     
+    if not args.command:
+        parser.print_help()
+        return 1
+    
     if args.command == "quick-test":
-        from llm_agent_evolution.quick_test import main as quick_test_main
-        return quick_test_main()
+        from src.llm_agent_evolution.quick_test import main as quick_test_main
+        return quick_test_main(seed=args.seed)
     elif args.command == "run":
-        from llm_agent_evolution.application import main as app_main
         # Set environment variables for the application
         os.environ["POPULATION_SIZE"] = str(args.population_size)
         os.environ["PARALLEL_AGENTS"] = str(args.parallel_agents)
@@ -41,6 +45,10 @@ def main():
         if args.use_mock:
             os.environ["USE_MOCK"] = "1"
         os.environ["MODEL"] = args.model
+        os.environ["LOG_FILE"] = args.log_file
+        
+        # Import and run the application
+        from src.llm_agent_evolution.application import main as app_main
         return app_main()
     else:
         parser.print_help()
