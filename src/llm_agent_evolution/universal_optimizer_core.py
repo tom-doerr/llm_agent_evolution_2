@@ -262,6 +262,8 @@ class UniversalOptimizer:
                 
             except Exception as e:
                 print(f"Worker error: {e}")
+                import traceback
+                print(f"Worker traceback: {traceback.format_exc()}")
                 time.sleep(1)  # Avoid tight loop on errors
     
     def run(self, max_evaluations: Optional[int] = None, 

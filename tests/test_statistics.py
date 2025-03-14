@@ -26,16 +26,16 @@ def test_track_reward():
     adapter.track_reward(5)
     
     # Check basic stats
-    assert len(adapter.rewards) == 3
-    assert adapter.best_reward == 20
-    assert adapter.worst_reward == 5
+    assert len(adapter.rewards) == 3, f"Expected 3 rewards, got {len(adapter.rewards)}"
+    assert adapter.best_reward == 20, f"Expected best reward 20, got {adapter.best_reward}"
+    assert adapter.worst_reward == 5, f"Expected worst reward 5, got {adapter.worst_reward}"
     
     # Check that recent_rewards works as a sliding window
     for i in range(100):
         adapter.track_reward(i)
     
-    assert len(adapter.recent_rewards) == 100
-    assert len(adapter.rewards) == 103
+    assert len(adapter.recent_rewards) == 100, f"Expected 100 recent rewards, got {len(adapter.recent_rewards)}"
+    assert len(adapter.rewards) == 103, f"Expected 103 total rewards, got {len(adapter.rewards)}"
 
 def test_get_stats():
     """Test getting statistics"""

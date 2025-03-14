@@ -128,6 +128,9 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
             # Preserve existing context from environment
             env['AGENT_CONTEXT'] = os.environ['AGENT_CONTEXT']
             print(f"Using context from environment: {os.environ['AGENT_CONTEXT'][:50]}{'...' if len(os.environ['AGENT_CONTEXT']) > 50 else ''}")
+        else:
+            # No context provided - add a note for debugging
+            print("No context provided for evaluation")
             
         try:
             # Run the script with the output as stdin
@@ -174,7 +177,11 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
                     print(f"Warning: Extracted numerical value {reward} from output: {lines[-1]}")
                     return reward
                 else:
-                    error_msg = f"Evaluation script did not return a valid numerical reward: {lines[-1]}"
+                    # More detailed error message with the actual output
+                    error_msg = (f"Evaluation script did not return a valid numerical reward.\n"
+                                f"Last line: '{lines[-1]}'\n"
+                                f"Full output: '{stdout}'\n"
+                                f"Error output: '{stderr}'")
                     print(f"Error: {error_msg}")
                     raise RuntimeError(error_msg)
                 

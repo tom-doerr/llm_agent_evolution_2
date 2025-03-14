@@ -76,11 +76,11 @@ print(len(text))
         # Check that second evaluation was faster, with some tolerance for system variations
         assert second_duration < first_duration * 0.9 or second_duration < 0.01, \
             f"Second evaluation ({second_duration:.4f}s) should be faster than first ({first_duration:.4f}s)"
-        
+    
         # Check cache stats
         stats = evaluator.get_cache_stats()
-        assert stats["hits"] >= 1, "Cache should have at least one hit"
-        assert stats["misses"] >= 1, "Cache should have at least one miss"
+        assert stats["hits"] >= 1, f"Cache should have at least one hit, got {stats['hits']}"
+        assert stats["misses"] >= 1, f"Cache should have at least one miss, got {stats['misses']}"
     finally:
         # Clean up
         if os.path.exists(script_path):

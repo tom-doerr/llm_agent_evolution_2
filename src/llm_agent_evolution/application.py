@@ -258,13 +258,20 @@ class EvolutionService(EvolutionUseCase):
                     
             except KeyboardInterrupt:
                 print("\nStopping evolution...")
+            except Exception as e:
+                print(f"\nError during evolution: {e}")
+                import traceback
+                print(traceback.format_exc())
             finally:
                 # Signal workers to stop
                 self.stop_event.set()
                 
-                # Wait for workers to finish
+                # Wait for workers to finish with timeout to avoid hanging
                 for worker in workers:
-                    worker.result()
+                    try:
+                        worker.result(timeout=5)
+                    except Exception as e:
+                        print(f"Worker error during shutdown: {e}")
         
         # Log end event
         self.logging_port.log_event("Evolution Completed", {

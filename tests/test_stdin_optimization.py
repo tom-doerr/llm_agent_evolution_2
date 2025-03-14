@@ -127,7 +127,8 @@ context = os.environ.get('AGENT_CONTEXT', '')
 agent_output = sys.stdin.read()
 
 # Calculate reward based on how many 'a's are in the output
-a_count = agent_output.count('a')
+# Only count lowercase 'a', not apostrophes
+a_count = sum(1 for c in agent_output if c == 'a')
 reward = a_count
 
 # Print detailed information

@@ -23,12 +23,16 @@ from llm_agent_evolution.universal_optimizer_core import UniversalOptimizer
 from llm_agent_evolution.universal_optimizer_core import UniversalOptimizer
 
 def progress_bar(current_count: int, max_count: Optional[int] = None) -> None:
-    """Simple progress bar function"""
+    """Simple progress indicator (not a bar) to minimize output volume"""
     if max_count:
-        percent = current_count / max_count * 100
-        print(f"Progress: {current_count}/{max_count} ({percent:.1f}%)")
+        # Only print every 10% progress to reduce output volume
+        if current_count % max(1, int(max_count * 0.1)) == 0 or current_count == max_count:
+            percent = current_count / max_count * 100
+            print(f"Progress: {current_count}/{max_count} ({percent:.1f}%)")
     else:
-        print(f"Progress: {current_count} evaluations")
+        # Only print at regular intervals
+        if current_count % 100 == 0:
+            print(f"Progress: {current_count} evaluations")
 
 def run_optimizer(
     eval_script: str,

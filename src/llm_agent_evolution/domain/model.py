@@ -9,7 +9,7 @@ CHROMOSOME_TYPES = Literal["task", "mate_selection", "mutation"]
 
 @dataclass
 class Chromosome:
-    """Represents a single chromosome with content and type"""
+    # A chromosome with content and type
     content: str
     type: CHROMOSOME_TYPES
     
@@ -20,7 +20,7 @@ class Chromosome:
 
 @dataclass
 class Agent:
-    """Represents an agent with three chromosomes and a reward score"""
+    # An agent with three chromosomes and a reward score
     task_chromosome: Chromosome
     mate_selection_chromosome: Chromosome
     mutation_chromosome: Chromosome

@@ -11,7 +11,7 @@ from llm_agent_evolution.adapters.secondary.mock_llm import MockLLMAdapter
 def test_mock_llm_initialization():
     """Test creating a mock LLM adapter"""
     adapter = MockLLMAdapter(seed=42)
-    assert adapter is not None
+    assert adapter is not None, "MockLLMAdapter should be created successfully"
 
 def test_mock_generate_mutation():
     """Test generating mutations with the mock adapter"""
@@ -20,8 +20,8 @@ def test_mock_generate_mutation():
     # Test task chromosome mutation
     task_chromosome = Chromosome(content="", type="task")
     mutated = adapter.generate_mutation(task_chromosome, "")
-    assert mutated.type == "task"
-    assert isinstance(mutated.content, str)
+    assert mutated.type == "task", f"Expected type 'task', got '{mutated.type}'"
+    assert isinstance(mutated.content, str), f"Expected string content, got {type(mutated.content)}"
     
     # Test mate selection chromosome mutation
     mate_chromosome = Chromosome(content="", type="mate_selection")

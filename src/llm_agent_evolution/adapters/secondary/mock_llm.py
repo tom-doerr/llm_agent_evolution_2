@@ -85,8 +85,9 @@ class MockLLMAdapter(LLMPort):
     
     def _evaluate_hidden_goal(self, output: str) -> float:
         """Evaluate using the hidden goal (a's in first 23 chars)"""
-        # Count 'a's in the first 23 characters
-        a_count = output[:23].count('a')
+        # Count lowercase 'a's in the first 23 characters (not apostrophes)
+        # Using a more precise approach to count only the letter 'a'
+        a_count = sum(1 for c in output[:23] if c == 'a')
         
         # Penalty for exceeding 23 characters
         length_penalty = max(0, len(output) - 23)

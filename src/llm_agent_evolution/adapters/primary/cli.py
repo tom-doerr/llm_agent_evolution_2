@@ -277,18 +277,12 @@ class CLIAdapter:
                     # Calculate rate (evals per second)
                     rate = evals_since_last / elapsed if elapsed > 0 else 0
                     
-                    # Format progress message
+                    # Format progress message - simplified to reduce output volume
                     if args.max_evaluations:
                         percent = current_count / args.max_evaluations * 100
-                        remaining = (args.max_evaluations - current_count) / rate if rate > 0 else 0
-                        
-                        print(f"Progress: {current_count:,}/{args.max_evaluations:,} evaluations "
-                              f"({percent:.1f}%) | Rate: {rate:.1f} evals/sec | "
-                              f"Est. remaining: {remaining/60:.1f} min")
+                        print(f"Progress: {current_count:,}/{args.max_evaluations:,} evaluations ({percent:.1f}%)")
                     else:
-                        print(f"Progress: {current_count:,} evaluations | "
-                              f"Rate: {rate:.1f} evals/sec | "
-                              f"Running time: {(now - start_time)/60:.1f} min")
+                        print(f"Progress: {current_count:,} evaluations | Running time: {(now - start_time)/60:.1f} min")
                     
                     last_count = current_count
                     last_print_time = now
@@ -413,6 +407,15 @@ class CLIAdapter:
             print(f"\nError: {e}")
             import traceback
             print(traceback.format_exc())
+            
+            # More helpful error message with suggestions
+            print("\nTroubleshooting suggestions:")
+            print("- Check if the evaluation command is correct and executable")
+            print("- Ensure any input files exist and are readable")
+            print("- Verify that the model name is valid")
+            print("- Try using --use-mock for testing without real LLM calls")
+            print("- Check log file for more details")
+            
             return 1
 
 def main():
