@@ -1,5 +1,5 @@
 import dspy
-from typing import List, Optional
+from typing import List, Optional, Any
 from llm_agent_evolution.domain.model import Agent, Chromosome
 from llm_agent_evolution.ports.secondary import LLMPort
 
