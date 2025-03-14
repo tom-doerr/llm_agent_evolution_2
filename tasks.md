@@ -1,6 +1,16 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+# is plan.md up to date? is it valuable or should we remove it?
+# fix the tests
+# is there code duplication?
+# are there any specs that are conflicting or conflict with current instructions? i might wnat to update them
+# what are the current chromosome initial values?
+# please merge the universal optimize readme with the main readme
+# hmm can we rename output file arg to save?
+# output format seems like bloat, please standardise to toml
+# why do we have so many commands for llm-evolve? i just want the command as string argument for optimization functionality
+
 # fix the cannot access local variable argparse error when runnnign llm evolve 
 Fixed the argparse error by removing the redundant import inside the main() function. The import at the top of the file is sufficient, and the redundant import was causing the variable to be redefined in a way that created scope issues.
 DONE
@@ -28,7 +38,6 @@ llm-evolve evolve --population-size 50 --parallel-agents 8
 
 The implementation preserves all functionality while making the interface more user-friendly.
 DONE
-# is there code duplication?
 # how many chromosomes do we currently have?
 Each agent in the system has three chromosomes:
 1. **Task chromosome**: Contains the output that gets evaluated for fitness
@@ -71,7 +80,6 @@ You can safely delete:
 
 The other scripts provide useful functionality and should be kept, though they could be moved into the package structure for better organization.
 DONE
-# please merge the universal optimize readme with the main readme
 # do we have a way to save our optimized agents using the cli?
 Yes, the CLI provides ways to save optimized agents:
 
