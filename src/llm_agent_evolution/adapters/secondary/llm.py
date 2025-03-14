@@ -31,9 +31,15 @@ class DSPyLLMAdapter(LLMPort):
         # Generate the mutation
         response = self.lm(prompt, max_tokens=MAX_OUTPUT_TOKENS)
         
+        # Handle different response types (DSPy might return a list)
+        if isinstance(response, list):
+            response_text = " ".join(str(item) for item in response)
+        else:
+            response_text = str(response)
+        
         # Create and return the new chromosome
         return Chromosome(
-            content=response.strip(),
+            content=response_text.strip(),
             type=chromosome.type
         )
     
@@ -67,9 +73,15 @@ class DSPyLLMAdapter(LLMPort):
         # Generate the selection
         response = self.lm(prompt, max_tokens=5)
         
+        # Handle different response types (DSPy might return a list)
+        if isinstance(response, list):
+            response_text = " ".join(str(item) for item in response)
+        else:
+            response_text = str(response)
+        
         try:
             # Parse the response to get the selected candidate index
-            selection = int(response.strip()) - 1
+            selection = int(response_text.strip()) - 1
             if 0 <= selection < len(candidates):
                 return candidates[selection]
             else:
@@ -95,5 +107,10 @@ class DSPyLLMAdapter(LLMPort):
         
         # Calculate reward
         reward = a_count - length_penalty
+        
+        # Print debug info for important cases
+        if a_count > 20 or reward > 20:
+            print(f"Debug - High reward output: '{output[:50]}{'...' if len(output) > 50 else ''}'")
+            print(f"Debug - a_count: {a_count}, length_penalty: {length_penalty}, reward: {reward}")
         
         return reward
