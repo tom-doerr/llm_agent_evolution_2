@@ -119,18 +119,8 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
     
     def _run_evaluation(self, cmd: List[str], output: str, timeout: int, context: str = None) -> float:
         """Run the evaluation script and return the reward"""
-        # Set up environment with context if provided
-        env = os.environ.copy()
-        if context:
-            env['AGENT_CONTEXT'] = context
-            print(f"Using context for evaluation: {context[:50]}{'...' if len(context) > 50 else ''}")
-        elif 'AGENT_CONTEXT' in os.environ:
-            # Preserve existing context from environment
-            env['AGENT_CONTEXT'] = os.environ['AGENT_CONTEXT']
-            print(f"Using context from environment: {os.environ['AGENT_CONTEXT'][:50]}{'...' if len(os.environ['AGENT_CONTEXT']) > 50 else ''}")
-        else:
-            # No context provided - add a note for debugging
-            print("No context provided for evaluation")
+        # Set up environment with context
+        env = self._prepare_environment(context)
             
         try:
             # Run the script with the output as stdin
@@ -146,54 +136,57 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
             # Send the output to the script
             stdout, stderr = process.communicate(input=output, timeout=timeout)
             
-            # Print context information from the output for debugging
-            if stdout and ('context' in stdout.lower() or 'agent_context' in stdout.lower()):
-                context_lines = [line for line in stdout.split('\n') if 'context' in line.lower()]
-                if context_lines:
-                    print(f"Context from script output: {context_lines[0]}")
-            
             # Check for errors
             if process.returncode != 0:
-                error_msg = f"Evaluation script failed with error: {stderr}"
-                print(f"Error: {error_msg}")
-                raise RuntimeError(error_msg)
+                raise RuntimeError(f"Evaluation script failed with error: {stderr}")
             
             # Parse the reward from the last line of output
-            lines = stdout.strip().split('\n')
-            if not lines:
-                error_msg = "Evaluation script produced no output"
-                print(f"Error: {error_msg}")
-                raise RuntimeError(error_msg)
-            
-            try:
-                reward = float(lines[-1].strip())
-                return reward
-            except ValueError:
-                # Try to extract a number from the last line
-                import re
-                numbers = re.findall(r"[-+]?\d*\.\d+|\d+", lines[-1])
-                if numbers:
-                    reward = float(numbers[0])
-                    print(f"Warning: Extracted numerical value {reward} from output: {lines[-1]}")
-                    return reward
-                else:
-                    # More detailed error message with the actual output
-                    error_msg = (f"Evaluation script did not return a valid numerical reward.\n"
-                                f"Last line: '{lines[-1]}'\n"
-                                f"Full output: '{stdout}'\n"
-                                f"Error output: '{stderr}'")
-                    print(f"Error: {error_msg}")
-                    raise RuntimeError(error_msg)
+            return self._parse_reward_from_output(stdout, stderr)
                 
         except subprocess.TimeoutExpired:
-            error_msg = f"Evaluation script timed out after {timeout} seconds"
-            print(f"Error: {error_msg}")
-            raise TimeoutError(error_msg)
+            raise TimeoutError(f"Evaluation script timed out after {timeout} seconds")
         except Exception as e:
             # Catch any other exceptions and provide more context
-            error_msg = f"Unexpected error during script evaluation: {str(e)}"
-            print(f"Error: {error_msg}")
-            raise RuntimeError(error_msg) from e
+            raise RuntimeError(f"Unexpected error during script evaluation: {str(e)}") from e
+    
+    def _prepare_environment(self, context: str = None) -> Dict[str, str]:
+        """Prepare the environment variables for script execution"""
+        env = os.environ.copy()
+        
+        if context:
+            env['AGENT_CONTEXT'] = context
+            print(f"Using context for evaluation: {context[:50]}{'...' if len(context) > 50 else ''}")
+        elif 'AGENT_CONTEXT' in os.environ:
+            # Preserve existing context from environment
+            env['AGENT_CONTEXT'] = os.environ['AGENT_CONTEXT']
+            print(f"Using context from environment: {os.environ['AGENT_CONTEXT'][:50]}{'...' if len(os.environ['AGENT_CONTEXT']) > 50 else ''}")
+        
+        return env
+    
+    def _parse_reward_from_output(self, stdout: str, stderr: str) -> float:
+        """Parse the reward value from script output"""
+        lines = stdout.strip().split('\n')
+        if not lines:
+            raise RuntimeError("Evaluation script produced no output")
+        
+        try:
+            # Try to parse the last line as a float
+            return float(lines[-1].strip())
+        except ValueError:
+            # Try to extract a number from the last line
+            import re
+            numbers = re.findall(r"[-+]?\d*\.\d+|\d+", lines[-1])
+            if numbers:
+                reward = float(numbers[0])
+                print(f"Warning: Extracted numerical value {reward} from output: {lines[-1]}")
+                return reward
+            else:
+                # More detailed error message with the actual output
+                error_msg = (f"Evaluation script did not return a valid numerical reward.\n"
+                            f"Last line: '{lines[-1]}'\n"
+                            f"Full output: '{stdout}'\n"
+                            f"Error output: '{stderr}'")
+                raise RuntimeError(error_msg)
     
     def evaluate_batch(self, outputs: List[str], script_path: str, 
                       timeout: int = 30, parallel: bool = True, context: str = None) -> List[float]:

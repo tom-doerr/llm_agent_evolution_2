@@ -78,63 +78,72 @@ def combine_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
     if not parent2.content:
         return Chromosome(content=parent1.content, type=parent1.type)
     
-    # Special handling for task chromosomes
-    if parent1.type == "task":
-        # Calculate how close each parent is to the target length
-        p1_distance = abs(len(parent1.content) - TARGET_LENGTH)
-        p2_distance = abs(len(parent2.content) - TARGET_LENGTH)
-        
-        # Bias toward the parent closer to target length
-        if p1_distance < p2_distance:
-            primary_parent, secondary_parent = parent1, parent2
-        else:
-            primary_parent, secondary_parent = parent2, parent1
-    else:
-        # For non-task chromosomes, randomly select primary parent
-        if random.random() < 0.5:
-            primary_parent, secondary_parent = parent1, parent2
-        else:
-            primary_parent, secondary_parent = parent2, parent1
+    # Select primary parent based on type and target length
+    primary_parent, secondary_parent = _select_primary_parent(parent1, parent2)
     
-    # Find hotspots for crossover
-    hotspots = [i for i, char in enumerate(primary_parent.content) if char in HOTSPOT_CHARS]
-    if not hotspots:
-        # If no hotspots, add some arbitrary points
-        content_len = len(primary_parent.content)
-        chunk_size = max(1, content_len // 5)
-        hotspots = [i for i in range(chunk_size, content_len, chunk_size)]
+    # Find crossover points
+    hotspots = _find_hotspots(primary_parent.content)
     
-    # Start with primary parent's content
-    result = list(primary_parent.content)
+    # Perform crossover
+    combined_content = _perform_crossover(primary_parent.content, secondary_parent.content, hotspots)
     
-    # Sort hotspots
-    hotspots.sort()
-    if hotspots:
-        # Select a random hotspot for switching
-        switch_point = random.choice(hotspots)
-        
-        # Take content from secondary parent from this point
-        if switch_point < len(secondary_parent.content):
-            secondary_content = list(secondary_parent.content[switch_point:])
-            
-            # Adjust result length
-            if switch_point + len(secondary_content) > len(result):
-                result = result[:switch_point] + secondary_content
-            else:
-                result[switch_point:switch_point+len(secondary_content)] = secondary_content
-    
-    # Ensure we don't exceed MAX_CHARS
-    combined_content = ''.join(result)
+    # Apply length constraints
     if len(combined_content) > MAX_CHARS:
         combined_content = combined_content[:MAX_CHARS]
     
     # For task chromosomes, bias toward TARGET_LENGTH
     if parent1.type == "task" and len(combined_content) > TARGET_LENGTH:
-        # High probability to truncate to exactly TARGET_LENGTH
         if random.random() < 0.8:
             combined_content = combined_content[:TARGET_LENGTH]
     
     return Chromosome(content=combined_content, type=parent1.type)
+
+def _select_primary_parent(parent1: Chromosome, parent2: Chromosome) -> Tuple[Chromosome, Chromosome]:
+    """Select which parent should be primary based on chromosome type and content"""
+    if parent1.type == "task":
+        # For task chromosomes, prefer the one closer to target length
+        p1_distance = abs(len(parent1.content) - TARGET_LENGTH)
+        p2_distance = abs(len(parent2.content) - TARGET_LENGTH)
+        
+        return (parent1, parent2) if p1_distance < p2_distance else (parent2, parent1)
+    else:
+        # For other chromosomes, random selection
+        return (parent1, parent2) if random.random() < 0.5 else (parent2, parent1)
+
+def _find_hotspots(content: str) -> List[int]:
+    """Find suitable crossover points in the content"""
+    hotspots = [i for i, char in enumerate(content) if char in HOTSPOT_CHARS]
+    
+    if not hotspots:
+        # If no hotspots, create artificial ones
+        content_len = len(content)
+        chunk_size = max(1, content_len // 5)
+        hotspots = [i for i in range(chunk_size, content_len, chunk_size)]
+    
+    return sorted(hotspots)
+
+def _perform_crossover(primary_content: str, secondary_content: str, hotspots: List[int]) -> str:
+    """Perform the actual crossover operation at a selected hotspot"""
+    if not hotspots:
+        return primary_content
+        
+    # Start with primary parent's content
+    result = list(primary_content)
+    
+    # Select a random hotspot for switching
+    switch_point = random.choice(hotspots)
+    
+    # Take content from secondary parent from this point
+    if switch_point < len(secondary_content):
+        secondary_part = list(secondary_content[switch_point:])
+        
+        # Adjust result length
+        if switch_point + len(secondary_part) > len(result):
+            result = result[:switch_point] + secondary_part
+        else:
+            result[switch_point:switch_point+len(secondary_part)] = secondary_part
+    
+    return ''.join(result)
 
 def mate_agents(parent1: Agent, parent2: Agent) -> Agent:
     """Create a new agent by combining chromosomes from two parents"""

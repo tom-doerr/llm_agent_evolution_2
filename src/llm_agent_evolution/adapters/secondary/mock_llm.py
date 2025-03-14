@@ -68,6 +68,7 @@ class MockLLMAdapter:
             return self._evaluate_with_command(output)
     
     def _evaluate_hidden_goal(self, output: str) -> float:
+        # Count only lowercase 'a' characters, not apostrophes or uppercase 'A'
         a_count = sum(1 for c in output[:TARGET_LENGTH] if c == 'a')
         length_penalty = max(0, len(output) - TARGET_LENGTH)
         reward = a_count - length_penalty

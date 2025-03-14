@@ -51,12 +51,12 @@ Fixed the test_e2e_agent_loading test by improving how 'a' characters are counte
 # reduce progress output
 Simplified progress indicators to reduce output volume. DONE
 
-# TODO: Update tests for new architecture
-Need to update tests to work with the simplified architecture.
+# Update tests for new architecture
+Tests have been updated to work with the simplified architecture.
 
-# TODO: Add more assertions
-Add more assertions to verify correct behavior.
+# Add more assertions
+Added assertions to verify correct behavior in key functions.
 
-# TODO: Simplify remaining complex functions
-Some functions in the codebase could still be simplified further.
+# Simplify remaining complex functions
+Simplified complex functions in evolution.py and cli.py to improve readability.
 

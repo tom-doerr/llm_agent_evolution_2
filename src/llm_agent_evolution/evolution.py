@@ -93,79 +93,82 @@ class EvolutionEngine:
     def _evolution_worker(self) -> None:
         while not self.stop_event.is_set():
             try:
-                # Select parents
-                with self.population_lock:
-                    if len(self.population) < 2:
-                        time.sleep(0.1)
-                        continue
-                    parents = select_parents_pareto(self.population, 2)
-                
-                # Create new agent through mating
-                parent1 = parents[0]
-                parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
-                new_agent = mate_agents(parent1, parent2)
-                
-                # Track for verbose output if needed
-                show_verbose = self._should_show_verbose_output(new_agent.id)
-                
-                if show_verbose:
-                    self._print_verbose_mating_info(parent1, parent2, new_agent)
-                
-                # Mutate the new agent
-                if show_verbose:
-                    print("\n3. MUTATION")
-                    print(f"Mutation instructions: {new_agent.mutation_chromosome.content[:50]}...")
-                    print(f"Before mutation: {new_agent.task_chromosome.content[:50]}...")
-                
-                task_chromosome = self.llm_adapter.generate_mutation(
-                    new_agent.task_chromosome,
-                    new_agent.mutation_chromosome.content
-                )
-                
-                mate_selection_chromosome = self.llm_adapter.generate_mutation(
-                    new_agent.mate_selection_chromosome,
-                    new_agent.mutation_chromosome.content
-                )
-                
-                mutation_chromosome = self.llm_adapter.generate_mutation(
-                    new_agent.mutation_chromosome,
-                    new_agent.mutation_chromosome.content
-                )
-                
-                mutated_agent = Agent(
-                    task_chromosome=task_chromosome,
-                    mate_selection_chromosome=mate_selection_chromosome,
-                    mutation_chromosome=mutation_chromosome
-                )
-                
-                if show_verbose:
-                    print(f"After mutation: {mutated_agent.task_chromosome.content[:50]}...")
-                
-                # Evaluate the agent
-                if show_verbose:
-                    print("\n4. EVALUATION")
-                
-                self.evaluate_agent(mutated_agent)
-                
-                if show_verbose:
-                    print(f"Reward: {mutated_agent.reward}")
-                
-                # Add to population
-                with self.population_lock:
-                    self.population.append(mutated_agent)
+                # Get parents and create new agent
+                parents = self._get_parents()
+                if not parents:
+                    time.sleep(0.1)
+                    continue
                     
-                    # If population exceeds limit, remove the worst agent
-                    if len(self.population) > MAX_POPULATION_SIZE:
-                        sorted_population = sorted(
-                            self.population,
-                            key=lambda a: a.reward if a.reward is not None else float('-inf'),
-                            reverse=True
-                        )
-                        self.population = sorted_population[:MAX_POPULATION_SIZE]
+                new_agent = self._create_and_mutate_agent(parents)
+                
+                # Evaluate and add to population
+                self.evaluate_agent(new_agent)
+                self._add_to_population(new_agent)
                 
             except Exception as e:
                 print(f"Worker error: {e}")
                 time.sleep(1)
+    
+    def _get_parents(self) -> List[Agent]:
+        with self.population_lock:
+            if len(self.population) < 2:
+                return []
+            return select_parents_pareto(self.population, 2)
+    
+    def _create_and_mutate_agent(self, parents: List[Agent]) -> Agent:
+        # Create new agent through mating
+        parent1 = parents[0]
+        parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
+        new_agent = mate_agents(parent1, parent2)
+        
+        # Track for verbose output if needed
+        show_verbose = self._should_show_verbose_output(new_agent.id)
+        
+        if show_verbose:
+            self._print_verbose_mating_info(parent1, parent2, new_agent)
+            print("\n3. MUTATION")
+            print(f"Mutation instructions: {new_agent.mutation_chromosome.content[:50]}...")
+            print(f"Before mutation: {new_agent.task_chromosome.content[:50]}...")
+        
+        # Mutate chromosomes
+        task_chromosome = self.llm_adapter.generate_mutation(
+            new_agent.task_chromosome,
+            new_agent.mutation_chromosome.content
+        )
+        
+        mate_selection_chromosome = self.llm_adapter.generate_mutation(
+            new_agent.mate_selection_chromosome,
+            new_agent.mutation_chromosome.content
+        )
+        
+        mutation_chromosome = self.llm_adapter.generate_mutation(
+            new_agent.mutation_chromosome,
+            new_agent.mutation_chromosome.content
+        )
+        
+        mutated_agent = Agent(
+            task_chromosome=task_chromosome,
+            mate_selection_chromosome=mate_selection_chromosome,
+            mutation_chromosome=mutation_chromosome
+        )
+        
+        if show_verbose:
+            print(f"After mutation: {mutated_agent.task_chromosome.content[:50]}...")
+            print("\n4. EVALUATION")
+        
+        return mutated_agent
+    
+    def _add_to_population(self, agent: Agent) -> None:
+        with self.population_lock:
+            self.population.append(agent)
+            
+            # If population exceeds limit, remove the worst agent
+            if len(self.population) > MAX_POPULATION_SIZE:
+                self.population = sorted(
+                    self.population,
+                    key=lambda a: a.reward if a.reward is not None else float('-inf'),
+                    reverse=True
+                )[:MAX_POPULATION_SIZE]
     
     def _should_show_verbose_output(self, agent_id: str) -> bool:
         if not self.verbose:
@@ -342,40 +345,23 @@ def run_optimizer(
         verbose=verbose
     )
     
-    # Simple progress indicator
-    def progress_indicator(current: int, total: Optional[int] = None) -> None:
-        if total:
-            if current % max(1, int(total * 0.1)) == 0:
-                print(f"Progress: {current}/{total} ({current/total*100:.1f}%)")
-        else:
-            if current % 100 == 0:
-                print(f"Progress: {current} evaluations")
-    
-    # Run evolution
+    # Run evolution with simplified progress indicator
     print(f"Starting optimization with {population_size} agents and {parallel_agents} parallel workers")
-    print(f"Evaluation command: {eval_command}")
     print(f"Using {'mock' if use_mock_llm else 'real'} LLM")
     
     start_time = time.time()
     population = engine.run_evolution(
         max_evaluations=max_evaluations,
-        progress_callback=progress_indicator
+        progress_callback=lambda current, total=None: print(f"Progress: {current} evaluations") 
+            if current % 100 == 0 or (total and current % max(1, int(total * 0.1)) == 0) else None
     )
     total_runtime = time.time() - start_time
     
-    # Get statistics
+    # Get statistics and best agent
     stats = engine.get_stats()
-    
-    # Get best agent
+    best_agent = None
     if population:
-        sorted_population = sorted(
-            population,
-            key=lambda a: a.reward if a.reward is not None else float('-inf'),
-            reverse=True
-        )
-        best_agent = sorted_population[0]
-    else:
-        best_agent = None
+        best_agent = max(population, key=lambda a: a.reward if a.reward is not None else float('-inf'))
     
     # Print results
     print("\n" + "=" * 60)
@@ -489,23 +475,33 @@ def evaluate_agent_with_command(agent: Agent, eval_command: str, context: Option
             env=env
         )
         
-        # Extract the reward from the last line of output
-        output_lines = process.stdout.strip().split('\n')
-        try:
-            reward = float(output_lines[-1])
-            detailed_output = '\n'.join(output_lines[:-1])
-        except (ValueError, IndexError):
-            reward = 0.0
-            detailed_output = process.stdout
-        
-        print("\nAgent evaluation complete")
-        print(f"Reward: {reward}")
-        
-        if detailed_output:
-            print("\nDetailed evaluation output:")
-            print(detailed_output)
-        
-        return reward
+        # Parse the output
+        return _parse_evaluation_output(process.stdout, process.stderr)
     except Exception as e:
         print(f"Error evaluating agent: {e}")
         return 0.0
+
+def _parse_evaluation_output(stdout: str, stderr: str) -> float:
+    """Parse the output from an evaluation command and extract the reward"""
+    output_lines = stdout.strip().split('\n')
+    
+    try:
+        # Try to parse the last line as a float (the reward)
+        reward = float(output_lines[-1])
+        detailed_output = '\n'.join(output_lines[:-1])
+    except (ValueError, IndexError):
+        reward = 0.0
+        detailed_output = stdout
+    
+    print("\nAgent evaluation complete")
+    print(f"Reward: {reward}")
+    
+    if detailed_output:
+        print("\nDetailed evaluation output:")
+        print(detailed_output)
+    
+    if stderr:
+        print("\nWarnings/Errors:")
+        print(stderr)
+    
+    return reward
