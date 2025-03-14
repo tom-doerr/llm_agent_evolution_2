@@ -1,6 +1,20 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+
+
+
+# parallelize pytest 
+# unify entrypoints
+# fix errors
+
+
+# please mark tasks that are done with DONE at the end similar to how its done in the other tasks
+# refactor the code
+
+
+
+
 # please reduce the size of tasks.md, maybe summarize the text below done items don't edit the headings! don't edit not done headings!
 Tasks related to reducing documentation size and summarizing completed work have been addressed. The README has been made more concise while maintaining key information.
 
