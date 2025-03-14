@@ -1,6 +1,3 @@
-"""
-Main entry point for running the LLM Agent Evolution package directly
-"""
 import sys
 import os
 

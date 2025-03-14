@@ -1,57 +1,222 @@
-"""
-Command-line interface for the LLM Agent Evolution package
-"""
 import sys
 import os
 import argparse
 import tempfile
 from typing import List, Optional
 
+from llm_agent_evolution.evolution import run_optimizer, load_agent, evaluate_agent_with_command
+
 def main(args: Optional[List[str]] = None) -> int:
-    """Main CLI entry point"""
-    # Check for positional eval_command before creating the parser
+    # Check for positional eval_command
     eval_command = None
-    if args is None and len(sys.argv) > 1 and not sys.argv[1].startswith('-') and sys.argv[1] not in ["evolve", "optimize", "standalone", "demo", "inference"]:
-        # We have a positional argument that's not a subcommand
+    if args is None and len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
         eval_command = sys.argv[1]
-        # Remove it from sys.argv to avoid confusing the parser
         sys.argv.pop(1)
-        # We'll handle it after parsing
     
     # Create the argument parser
-    parser = _create_main_parser()
+    parser = argparse.ArgumentParser(
+        description="LLM Agent Evolution - Evolve LLM agents through natural selection",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    # Core parameters
+    parser.add_argument(
+        "--population-size", "-p",
+        type=int, 
+        default=100,
+        help="Population size"
+    )
+    
+    parser.add_argument(
+        "--parallel-agents", "-j",
+        type=int, 
+        default=10,
+        help="Number of agents to evaluate in parallel"
+    )
+    
+    parser.add_argument(
+        "--max-evaluations", "-n",
+        type=int, 
+        default=None,
+        help="Maximum number of evaluations to run"
+    )
+    
+    parser.add_argument(
+        "--model", "-m",
+        type=str, 
+        default="openrouter/google/gemini-2.0-flash-001",
+        help="LLM model to use"
+    )
+    
+    parser.add_argument(
+        "--use-mock", "--mock",
+        action="store_true",
+        help="Use mock LLM adapter for testing"
+    )
+    
+    parser.add_argument(
+        "--eval-command", "-e",
+        type=str,
+        default=None,
+        help="Command to run for evaluation"
+    )
+    
+    parser.add_argument(
+        "--load", "-l",
+        type=str,
+        default=None,
+        help="Load a previously saved agent from file"
+    )
+    
+    parser.add_argument(
+        "--save", "-o",
+        type=str,
+        default=None,
+        help="File to save the best result to"
+    )
+    
+    parser.add_argument(
+        "--context", "-c",
+        type=str,
+        default=None,
+        help="Context to pass to the agent"
+    )
+    
+    parser.add_argument(
+        "--context-file", "-cf",
+        type=str,
+        default=None,
+        help="File containing context to pass to the agent"
+    )
+    
+    parser.add_argument(
+        "--initial-content", "-i",
+        type=str,
+        default="",
+        help="Initial content for the chromosomes"
+    )
+    
+    parser.add_argument(
+        "--seed", "-s",
+        type=int,
+        default=None,
+        help="Random seed for reproducibility"
+    )
+    
+    parser.add_argument(
+        "--quick-test", "-q",
+        action="store_true",
+        help="Run a quick test with mock LLM"
+    )
+    
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose output"
+    )
+    
+    # Parse arguments
+    parsed_args = parser.parse_args(args)
+    
+    # If we found a positional eval_command, add it to the parsed args
+    if eval_command:
+        parsed_args.eval_command = eval_command
     
     try:
-        # Parse arguments
-        parsed_args = parser.parse_args(args)
+        # Handle quick test mode
+        if parsed_args.quick_test:
+            parsed_args.use_mock = True
+            if not parsed_args.max_evaluations:
+                parsed_args.max_evaluations = 100
+            parsed_args.population_size = 20
+            parsed_args.parallel_agents = 4
+            if parsed_args.seed is None:
+                parsed_args.seed = 42
         
-        # If we found a positional eval_command, add it to the parsed args
-        if eval_command:
-            parsed_args.eval_command = eval_command
+        # Get context from file if specified
+        context = parsed_args.context
+        if parsed_args.context_file:
+            try:
+                with open(parsed_args.context_file, 'r') as f:
+                    context = f.read()
+            except Exception as e:
+                print(f"Error reading context file: {e}")
+                return 1
         
-        # Handle the command based on arguments
-        if hasattr(parsed_args, 'command') and parsed_args.command:
-            # If a specific subcommand was provided, handle it
-            if parsed_args.command == "evolve":
-                return _handle_evolve_command(parsed_args)
-            elif parsed_args.command == "optimize":
-                return _handle_optimize_command(parsed_args)
-            elif parsed_args.command == "standalone":
-                return _handle_standalone_command(parsed_args)
-            elif parsed_args.command == "demo":
-                return _handle_demo_command(parsed_args)
-            elif parsed_args.command == "inference":
-                return _handle_inference_command(parsed_args)
-        else:
-            # No subcommand provided, use the default command handler
-            return _handle_default_command(parsed_args)
+        # Check if we should read from stdin
+        if context is None and not sys.stdin.isatty():
+            try:
+                context = sys.stdin.read()
+                print(f"Read context from stdin: {context[:50]}{'...' if len(context) > 50 else ''}")
+            except Exception as e:
+                print(f"Error reading from stdin: {e}")
+        
+        # Set context in environment if provided
+        if context:
+            os.environ['AGENT_CONTEXT'] = context
+        
+        # If load is specified, run with the loaded agent
+        if parsed_args.load:
+            if not parsed_args.eval_command:
+                print("Error: --eval-command is required when loading an agent")
+                return 1
+                
+            agent = load_agent(parsed_args.load)
+            if not agent:
+                print(f"Error: Could not load agent from {parsed_args.load}")
+                return 1
+                
+            print(f"Loaded agent with ID: {agent.id}")
+            print(f"Agent content: {agent.task_chromosome.content[:50]}...")
+            
+            reward = evaluate_agent_with_command(agent, parsed_args.eval_command, context)
+            print(f"\nAgent output: {agent.task_chromosome.content}")
+            return 0
+        
+        # If eval_command is specified, run the optimizer
+        if parsed_args.eval_command:
+            result = run_optimizer(
+                eval_command=parsed_args.eval_command,
+                population_size=parsed_args.population_size,
+                parallel_agents=parsed_args.parallel_agents,
+                max_evaluations=parsed_args.max_evaluations,
+                use_mock_llm=parsed_args.use_mock,
+                model_name=parsed_args.model,
+                initial_content=parsed_args.initial_content,
+                verbose=parsed_args.verbose,
+                random_seed=parsed_args.seed
+            )
+            
+            # Save the best agent if requested
+            if parsed_args.save and result["best_agent"]["content"]:
+                from llm_agent_evolution.evolution import save_agent
+                from llm_agent_evolution.domain.model import Agent, Chromosome
+                
+                best_agent = Agent(
+                    task_chromosome=Chromosome(content=result["best_agent"]["content"], type="task"),
+                    mate_selection_chromosome=Chromosome(content="", type="mate_selection"),
+                    mutation_chromosome=Chromosome(content="", type="mutation"),
+                    id=result["best_agent"]["id"],
+                    reward=result["best_agent"]["reward"]
+                )
+                
+                if save_agent(best_agent, parsed_args.save):
+                    print(f"\nBest agent saved to: {parsed_args.save}")
+            
+            return 0
+        
+        # If no specific action is determined, show help
+        parser.print_help()
+        return 1
+        
+    except KeyboardInterrupt:
+        print("\nOperation interrupted by user")
+        return 1
     except Exception as e:
         print(f"Error: {e}")
         import traceback
         print(traceback.format_exc())
         return 1
-    
-    return 0
 def _create_main_parser():
     """Create the main argument parser"""
     parser = argparse.ArgumentParser(

@@ -1,25 +1,20 @@
 import random
-from typing import List, Optional
-from llm_agent_evolution.domain.model import Agent, Chromosome
-from llm_agent_evolution.ports.secondary import LLMPort
+from typing import List
+import subprocess
+import tempfile
+import os
+from llm_agent_evolution.domain.model import Agent, Chromosome, TARGET_LENGTH
 
-class MockLLMAdapter(LLMPort):
-    """Mock adapter for LLM interactions for testing purposes"""
-    
+class MockLLMAdapter:
     def __init__(self, seed: int = None):
-        """Initialize the mock LLM adapter with an optional random seed"""
         if seed is not None:
             random.seed(seed)
-        self.eval_command = None  # Will be set by the application
+        self.eval_command = None
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
-        """Generate a mock mutation for a chromosome"""
-        # For task chromosomes, generate random content without leaking the task
         if chromosome.type == "task":
-            # Start with the original content
             original = chromosome.content
             
-            # If the original is empty, generate some random content
             if not original:
                 options = [
                     "Hello world",
@@ -30,7 +25,6 @@ class MockLLMAdapter(LLMPort):
                 ]
                 content = random.choice(options)
             else:
-                # Modify the original content in some way
                 modifications = [
                     lambda s: s + " " + random.choice(["extra", "more", "additional"]),
                     lambda s: s.replace(" ", " " + random.choice(["a", "b", "c"]) + " "),
@@ -40,16 +34,13 @@ class MockLLMAdapter(LLMPort):
                 ]
                 content = random.choice(modifications)(original)
         else:
-            # For other chromosome types, generate simple instructions
             if random.random() < 0.7 and chromosome.content:
-                # 70% chance to keep existing content with small modifications
                 content = chromosome.content
                 if "reward" not in content:
                     content += " Consider the reward."
                 if "diversity" not in content:
                     content += " Maintain diversity."
             else:
-                # 30% chance to generate new content
                 options = [
                     "Select the candidate with the highest reward",
                     "Choose a mate with diverse characteristics",
@@ -65,65 +56,51 @@ class MockLLMAdapter(LLMPort):
         )
     
     def select_mate(self, agent: Agent, candidates: List[Agent]) -> Agent:
-        """Select a mate from candidates randomly"""
         if not candidates:
             return None
         
         return random.choice(candidates)
     
     def evaluate_task_output(self, output: str) -> float:
-        """
-        Evaluate the output using the specified evaluation command
-        If no command is set, returns a score based on the hidden goal:
-        - Reward increases for every 'a' for the first 23 characters
-        - Reward decreases for every character after 23 characters
-        """
         if not self.eval_command:
             return self._evaluate_hidden_goal(output)
         else:
             return self._evaluate_with_command(output)
     
     def _evaluate_hidden_goal(self, output: str) -> float:
-        """Evaluate using the hidden goal (a's in first 23 chars)"""
-        # Count lowercase 'a's in the first 23 characters (not apostrophes)
-        # Using a more precise approach to count only the letter 'a'
-        a_count = sum(1 for c in output[:23] if c == 'a')
-        
-        # Penalty for exceeding 23 characters
-        length_penalty = max(0, len(output) - 23)
-        
-        # Calculate reward
+        a_count = sum(1 for c in output[:TARGET_LENGTH] if c == 'a')
+        length_penalty = max(0, len(output) - TARGET_LENGTH)
         reward = a_count - length_penalty
-        
-        # For deterministic testing, don't add diversity bonus
         return reward
     
     def _evaluate_with_command(self, output: str) -> float:
-        """Evaluate using the specified command"""
-        # Use the script evaluator to run the command
-        from llm_agent_evolution.adapters.secondary.script_evaluator import ScriptEvaluatorAdapter
-        evaluator = ScriptEvaluatorAdapter()
-        
         try:
-            # Create a temporary script that runs the eval command
-            import tempfile
-            import os
-            
             with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.sh') as f:
                 script_path = f.name
                 f.write("#!/bin/sh\n")
                 f.write(f"{self.eval_command}\n")
             
-            # Make executable
             os.chmod(script_path, 0o755)
             
-            # Evaluate
-            reward = evaluator.evaluate(output, script_path)
+            process = subprocess.run(
+                [script_path],
+                input=output,
+                text=True,
+                capture_output=True
+            )
             
-            # Clean up
             os.remove(script_path)
             
-            return reward
+            if process.returncode != 0:
+                print(f"Warning: Command failed: {process.stderr}")
+                return 0.0
+                
+            try:
+                return float(process.stdout.strip().split('\n')[-1])
+            except (ValueError, IndexError):
+                print(f"Warning: Could not parse output as float: {process.stdout}")
+                return 0.0
+                
         except Exception as e:
             print(f"Evaluation error: {e}")
-            return len(output)  # Fallback to length for testing
+            return len(output)
