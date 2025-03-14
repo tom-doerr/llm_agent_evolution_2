@@ -51,11 +51,21 @@ class MockLLMAdapter(LLMPort):
     def evaluate_task_output(self, output: str) -> float:
         """
         Evaluate the output using the specified evaluation command
-        If no command is set, returns a random score for testing
+        If no command is set, returns a score based on the hidden goal:
+        - Reward increases for every 'a' for the first 23 characters
+        - Reward decreases for every character after 23 characters
         """
         if not self.eval_command:
-            # For testing, return the length of the output
-            return len(output)
+            # Count 'a's in the first 23 characters
+            a_count = output[:23].count('a')
+            
+            # Penalty for exceeding 23 characters
+            length_penalty = max(0, len(output) - 23)
+            
+            # Calculate reward
+            reward = a_count - length_penalty
+            
+            return reward
             
         # Use the script evaluator to run the command
         from llm_agent_evolution.adapters.secondary.script_evaluator import ScriptEvaluatorAdapter

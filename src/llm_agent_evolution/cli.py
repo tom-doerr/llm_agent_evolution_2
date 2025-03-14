@@ -7,6 +7,9 @@ import argparse
 
 def main():
     """Main CLI entry point"""
+    # Ensure argparse is imported
+    import argparse
+    
     parser = argparse.ArgumentParser(
         description="LLM Agent Evolution - Command Line Interface",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter

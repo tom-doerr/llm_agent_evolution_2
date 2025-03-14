@@ -1,7 +1,7 @@
 import random
 from typing import List, Tuple, Optional
 import numpy as np
-from .model import Agent, Chromosome
+from .model import Agent, Chromosome, MAX_CHARS
 
 # Constants
 CHROMOSOME_SWITCH_PROBABILITY = 0.3  # Probability of switching chromosomes at hotspots
