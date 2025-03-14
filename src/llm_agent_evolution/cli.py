@@ -8,11 +8,80 @@ import argparse
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description="LLM Agent Evolution - Command Line Interface"
+        description="LLM Agent Evolution - Command Line Interface",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
     # Create subparsers for different commands
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    
+    # Evolve command
+    evolve_parser = subparsers.add_parser(
+        "evolve", 
+        help="Run the main evolution process"
+    )
+    
+    # Add arguments for the evolve command
+    evolve_parser.add_argument(
+        "--population-size", "-p",
+        type=int, 
+        default=100,
+        help="Initial population size"
+    )
+    
+    evolve_parser.add_argument(
+        "--parallel-agents", "-j",
+        type=int, 
+        default=10,
+        help="Number of agents to evaluate in parallel"
+    )
+    
+    evolve_parser.add_argument(
+        "--max-evaluations", "-n",
+        type=int, 
+        default=None,
+        help="Maximum number of evaluations to run"
+    )
+    
+    evolve_parser.add_argument(
+        "--use-mock", "--mock",
+        action="store_true",
+        help="Use mock LLM adapter for testing"
+    )
+    
+    evolve_parser.add_argument(
+        "--model", "-m",
+        type=str, 
+        default="openrouter/google/gemini-2.0-flash-001",
+        help="LLM model to use"
+    )
+    
+    evolve_parser.add_argument(
+        "--log-file", "-l",
+        type=str, 
+        default="evolution.log",
+        help="Log file path"
+    )
+    
+    evolve_parser.add_argument(
+        "--seed", "-s",
+        type=int,
+        default=None,
+        help="Random seed for reproducibility"
+    )
+    
+    evolve_parser.add_argument(
+        "--eval-command", "-e",
+        type=str,
+        default=None,
+        help="Command to run for evaluation"
+    )
+    
+    evolve_parser.add_argument(
+        "--quick-test", "-q",
+        action="store_true",
+        help="Run a quick test with mock LLM"
+    )
     
     # Optimize command
     optimize_parser = subparsers.add_parser(
@@ -33,76 +102,76 @@ def main():
     )
     
     optimize_parser.add_argument(
-        "--population-size", 
+        "--population-size", "-p",
         type=int, 
         default=50,
-        help="Initial population size (default: 50)"
+        help="Initial population size"
     )
     
     optimize_parser.add_argument(
-        "--parallel-agents", 
+        "--parallel-agents", "-j",
         type=int, 
         default=8,
-        help="Number of agents to evaluate in parallel (default: 8)"
+        help="Number of agents to evaluate in parallel"
     )
     
     optimize_parser.add_argument(
-        "--max-evaluations", 
+        "--max-evaluations", "-n",
         type=int, 
         default=None,
-        help="Maximum number of evaluations to run (default: unlimited)"
+        help="Maximum number of evaluations to run"
     )
     
     optimize_parser.add_argument(
-        "--use-mock-llm",
+        "--use-mock-llm", "--mock",
         action="store_true",
         help="Use mock LLM adapter for testing"
     )
     
     optimize_parser.add_argument(
-        "--model", 
+        "--model", "-m",
         type=str, 
         default="openrouter/google/gemini-2.0-flash-001",
-        help="LLM model to use (default: openrouter/google/gemini-2.0-flash-001)"
+        help="LLM model to use"
     )
     
     optimize_parser.add_argument(
-        "--log-file", 
+        "--log-file", "-l",
         type=str, 
         default="universal_optimize.log",
-        help="Log file path (default: universal_optimize.log)"
+        help="Log file path"
     )
     
     optimize_parser.add_argument(
-        "--seed",
+        "--seed", "-s",
         type=int,
         default=None,
         help="Random seed for reproducibility"
     )
     
     optimize_parser.add_argument(
-        "--script-timeout",
+        "--script-timeout", "-t",
         type=int,
         default=30,
-        help="Maximum execution time for the evaluation script in seconds (default: 30)"
+        help="Maximum execution time for the evaluation script in seconds"
     )
     
     optimize_parser.add_argument(
-        "--initial-content",
+        "--initial-content", "-i",
         type=str,
         default="",
         help="Initial content for the chromosomes"
     )
     
     optimize_parser.add_argument(
-        "--initial-file",
+        "--initial-file", "-f",
         type=str,
         default=None,
         help="File containing initial content for the chromosomes"
     )
     
     optimize_parser.add_argument(
-        "--output-file",
+        "--output-file", "-o",
         type=str,
         default=None,
         help="File to write the best result to"
@@ -113,20 +182,79 @@ def main():
         type=str,
         choices=["text", "json"],
         default="text",
-        help="Output format (default: text)"
+        help="Output format"
     )
     
     optimize_parser.add_argument(
         "--max-chars",
         type=int,
         default=1000,
-        help="Maximum number of characters for chromosomes (default: 1000)"
+        help="Maximum number of characters for chromosomes"
     )
     
     optimize_parser.add_argument(
-        "--verbose",
+        "--verbose", "-v",
         action="store_true",
-        help="Enable verbose mode with detailed output of each evolution step"
+        help="Enable verbose mode with detailed output"
+    )
+    
+    # Standalone command
+    standalone_parser = subparsers.add_parser(
+        "standalone", 
+        help="Run the simplified standalone optimizer (no LLM API calls)"
+    )
+    
+    standalone_parser.add_argument(
+        "eval_command",
+        help="Evaluation command (receives agent output via stdin, returns score as last line)"
+    )
+    
+    standalone_parser.add_argument(
+        "--population-size", "-p",
+        type=int, 
+        default=50,
+        help="Initial population size"
+    )
+    
+    standalone_parser.add_argument(
+        "--parallel-agents", "-j",
+        type=int, 
+        default=8,
+        help="Number of agents to evaluate in parallel"
+    )
+    
+    standalone_parser.add_argument(
+        "--max-evaluations", "-n",
+        type=int, 
+        default=1000,
+        help="Maximum number of evaluations to run"
+    )
+    
+    standalone_parser.add_argument(
+        "--initial-content", "-i",
+        type=str,
+        default="",
+        help="Initial content for the chromosomes"
+    )
+    
+    standalone_parser.add_argument(
+        "--seed", "-s",
+        type=int,
+        default=None,
+        help="Random seed for reproducibility"
+    )
+    
+    standalone_parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose output"
+    )
+    
+    standalone_parser.add_argument(
+        "--output-file", "-o",
+        type=str,
+        default=None,
+        help="File to write the best result to"
     )
     
     # Demo command
@@ -136,13 +264,13 @@ def main():
     )
     
     demo_parser.add_argument(
-        "--use-mock",
+        "--use-mock", "--mock",
         action="store_true",
         help="Use mock LLM instead of real LLM"
     )
     
     demo_parser.add_argument(
-        "--initial-content",
+        "--initial-content", "-i",
         type=str,
         default="a",
         help="Initial content for task chromosome"
@@ -151,7 +279,42 @@ def main():
     # Parse arguments
     args = parser.parse_args()
     
-    if args.command == "optimize":
+    if args.command == "evolve":
+        # Import and run the main application
+        from llm_agent_evolution.application import create_application
+        
+        # Create the application
+        cli = create_application(
+            model_name=args.model,
+            log_file=args.log_file,
+            use_mock=args.use_mock,
+            random_seed=args.seed,
+            eval_command=args.eval_command
+        )
+        
+        # Override arguments
+        import argparse
+        cli_args = argparse.Namespace()
+        cli_args.population_size = args.population_size
+        cli_args.parallel_agents = args.parallel_agents
+        cli_args.max_evaluations = args.max_evaluations
+        cli_args.use_mock = args.use_mock
+        cli_args.quick_test = args.quick_test
+        cli_args.seed = args.seed
+        cli_args.model = args.model
+        cli_args.log_file = args.log_file
+        cli_args.eval_command = args.eval_command
+        
+        # Store original parse_args method
+        original_parse_args = cli.parse_args
+        
+        # Override parse_args to return our fixed arguments
+        cli.parse_args = lambda: cli_args
+        
+        # Run the application
+        return cli.run()
+    
+    elif args.command == "optimize":
         # Import the universal optimizer
         from llm_agent_evolution.universal_optimize import run_optimizer
         
@@ -209,6 +372,35 @@ def main():
             os.remove(eval_script)
             
         return result
+    
+    elif args.command == "standalone":
+        # Import the standalone optimizer
+        from llm_agent_evolution.standalone import run_standalone_optimizer
+        
+        # Run the standalone optimizer
+        try:
+            results = run_standalone_optimizer(
+                eval_command=args.eval_command,
+                population_size=args.population_size,
+                parallel_agents=args.parallel_agents,
+                max_evaluations=args.max_evaluations,
+                initial_content=args.initial_content,
+                random_seed=args.seed,
+                verbose=args.verbose
+            )
+            
+            # Write to output file if specified
+            if args.output_file and results["best_agent"]["content"]:
+                with open(args.output_file, 'w') as f:
+                    f.write(results["best_agent"]["content"])
+                print(f"\nBest result written to: {args.output_file}")
+                
+            return 0
+        except Exception as e:
+            print(f"Error running standalone optimizer: {e}")
+            import traceback
+            print(traceback.format_exc())
+            return 1
     
     elif args.command == "demo":
         # Import the evolution demo

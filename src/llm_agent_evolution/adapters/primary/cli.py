@@ -15,124 +15,139 @@ class CLIAdapter:
     def parse_args(self) -> argparse.Namespace:
         """Parse command-line arguments"""
         parser = argparse.ArgumentParser(
-            description="LLM Agent Evolution - Evolve LLM-based agents through evolutionary algorithms"
+            description="LLM Agent Evolution - Evolve LLM-based agents through evolutionary algorithms",
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
         
-        parser.add_argument(
-            "--population-size", 
+        # Core parameters
+        group_core = parser.add_argument_group('Core Parameters')
+        group_core.add_argument(
+            "--population-size", "-p",
             type=int, 
             default=100,
-            help="Initial population size (default: 100)"
+            help="Initial population size"
         )
         
-        parser.add_argument(
-            "--parallel-agents", 
+        group_core.add_argument(
+            "--parallel-agents", "-j",
             type=int, 
             default=10,
-            help="Number of agents to evaluate in parallel (default: 10)"
+            help="Number of agents to evaluate in parallel"
         )
         
-        parser.add_argument(
-            "--max-evaluations", 
+        group_core.add_argument(
+            "--max-evaluations", "-n",
             type=int, 
             default=None,
-            help="Maximum number of evaluations to run (default: unlimited)"
+            help="Maximum number of evaluations to run (unlimited if not specified)"
         )
         
-        parser.add_argument(
-            "--log-file", 
-            type=str, 
-            default="evolution.log",
-            help="Log file path (default: evolution.log)"
-        )
-        
-        parser.add_argument(
-            "--model", 
+        # LLM configuration
+        group_llm = parser.add_argument_group('LLM Configuration')
+        group_llm.add_argument(
+            "--model", "-m",
             type=str, 
             default="openrouter/google/gemini-2.0-flash-001",
-            help="LLM model to use (default: openrouter/google/gemini-2.0-flash-001)"
+            help="LLM model to use"
         )
         
-        parser.add_argument(
-            "--use-mock",
+        group_llm.add_argument(
+            "--use-mock", "--mock",
             action="store_true",
-            help="Use mock LLM adapter for testing"
+            help="Use mock LLM adapter for testing (no API calls)"
         )
         
-        parser.add_argument(
-            "--eval-command",
+        # Evaluation
+        group_eval = parser.add_argument_group('Evaluation')
+        group_eval.add_argument(
+            "--eval-command", "-e",
             type=str,
             default=None,
             help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
         )
         
-        parser.add_argument(
-            "--seed",
+        # Output and logging
+        group_output = parser.add_argument_group('Output and Logging')
+        group_output.add_argument(
+            "--log-file", "-l",
+            type=str, 
+            default="evolution.log",
+            help="Log file path"
+        )
+        
+        group_output.add_argument(
+            "--verbose", "-v",
+            action="store_true",
+            help="Enable verbose output"
+        )
+        
+        # Misc options
+        group_misc = parser.add_argument_group('Miscellaneous')
+        group_misc.add_argument(
+            "--seed", "-s",
             type=int,
             default=None,
             help="Random seed for reproducibility"
         )
         
-        parser.add_argument(
-            "--quick-test",
+        group_misc.add_argument(
+            "--quick-test", "-q",
             action="store_true",
             help="Run a quick test with mock LLM (100 evaluations)"
-        )
-        
-        parser.add_argument(
-            "--no-visualization",
-            action="store_true",
-            help="Disable visualization generation"
         )
         
         return parser.parse_args()
     
     def display_stats(self, stats: Dict[str, Any]) -> None:
-        """Display statistics to the console"""
-        print("\n=== Population Statistics ===")
+        """Display statistics to the console in a clear, information-dense format"""
+        # Create a horizontal separator
+        separator = "=" * 60
         
-        # Print overall stats
-        print(f"Population size: {stats.get('population_size', 0)}")
-        print(f"Total evaluations: {stats.get('count', 0)}")
+        print(f"\n{separator}")
+        print(f"POPULATION STATISTICS")
+        print(f"{separator}")
+        
+        # Core statistics in a compact format
+        print(f"Population: {stats.get('population_size', 0):,} agents | "
+              f"Evaluations: {stats.get('count', 0):,}")
         
         if stats.get('mean') is not None:
-            print(f"Mean reward: {stats.get('mean'):.2f}")
-            print(f"Median reward: {stats.get('median'):.2f}")
-            print(f"Std deviation: {stats.get('std_dev'):.2f}")
-            print(f"Best reward: {stats.get('best'):.2f}")
-            print(f"Worst reward: {stats.get('worst'):.2f}")
+            # Format the main statistics in a table-like layout
+            print(f"{separator}")
+            print(f"{'Metric':<15} {'Current':<10} {'Recent Window':<15}")
+            print(f"{separator}")
+            
+            window_stats = stats.get('window_stats', {})
+            window_mean = window_stats.get('mean')
+            window_median = window_stats.get('median')
+            window_std = window_stats.get('std_dev')
+            
+            # Print each metric with both overall and window values
+            print(f"{'Mean':<15} {stats.get('mean', 0):<10.2f} "
+                  f"{window_mean:<15.2f if window_mean is not None else 'N/A':<15}")
+            
+            print(f"{'Median':<15} {stats.get('median', 0):<10.2f} "
+                  f"{window_median:<15.2f if window_median is not None else 'N/A':<15}")
+            
+            print(f"{'Std Dev':<15} {stats.get('std_dev', 0):<10.2f} "
+                  f"{window_std:<15.2f if window_std is not None else 'N/A':<15}")
+            
+            print(f"{'Best':<15} {stats.get('best', 0):<10.2f}")
+            print(f"{'Worst':<15} {stats.get('worst', 0):<10.2f}")
             
             # Display improvement metrics if available
+            print(f"{separator}")
             if stats.get('improvement_rate') is not None:
                 print(f"Improvement rate: {stats.get('improvement_rate'):.4f} per minute")
                 
             if stats.get('time_since_last_best') is not None:
                 minutes = stats.get('time_since_last_best') / 60
-                print(f"Time since last best: {minutes:.2f} minutes")
+                if minutes < 1:
+                    print(f"Time since last best: {stats.get('time_since_last_best'):.1f} seconds")
+                else:
+                    print(f"Time since last best: {minutes:.2f} minutes")
         
-        # Recent window stats
-        window_stats = stats.get('window_stats', {})
-        if window_stats and window_stats.get('count', 0) > 0:
-            print(f"\nRecent Evaluations (Last {window_stats.get('window_size', 100)})")
-            print(f"Count: {window_stats.get('count', 0)}")
-            
-            if window_stats.get('mean') is not None:
-                print(f"Mean reward: {window_stats.get('mean'):.2f}")
-                print(f"Median reward: {window_stats.get('median'):.2f}")
-                print(f"Std deviation: {window_stats.get('std_dev'):.2f}")
-        
-        # Check for visualizations
-        viz_dir = "visualizations"
-        if os.path.exists(viz_dir) and os.listdir(viz_dir):
-            print(f"\nVisualizations available in: {os.path.abspath(viz_dir)}")
-            print("Latest visualization files:")
-            files = sorted(
-                [f for f in os.listdir(viz_dir) if f.endswith('.png')],
-                key=lambda x: os.path.getmtime(os.path.join(viz_dir, x)),
-                reverse=True
-            )
-            for file in files[:3]:  # Show the 3 most recent files
-                print(f"- {file}")
+        print(f"{separator}")
     
     def run(self) -> int:
         """Run the CLI application"""
@@ -149,27 +164,56 @@ class CLIAdapter:
                 args.seed = 42  # Use fixed seed for reproducible tests
         
         try:
-            # Show startup message
-            print("LLM Agent Evolution")
-            print(f"Population size: {args.population_size}")
-            print(f"Parallel agents: {args.parallel_agents}")
-            print(f"Max evaluations: {args.max_evaluations or 'unlimited'}")
-            print(f"Using {'mock' if args.use_mock else 'real'} LLM adapter")
+            # Show startup banner
+            print("\n" + "=" * 60)
+            print("LLM AGENT EVOLUTION".center(60))
+            print("=" * 60)
             
-            # Simple progress tracking
+            # Configuration summary
+            print("\nConfiguration:")
+            print(f"- Population size: {args.population_size}")
+            print(f"- Parallel agents: {args.parallel_agents}")
+            print(f"- Max evaluations: {args.max_evaluations or 'unlimited'}")
+            print(f"- Model: {args.model}")
+            print(f"- Using {'mock' if args.use_mock else 'real'} LLM adapter")
+            if args.eval_command:
+                print(f"- Evaluation command: {args.eval_command}")
+            print(f"- Log file: {args.log_file}")
+            if args.seed is not None:
+                print(f"- Random seed: {args.seed}")
+            
+            print("\nStarting evolution process...")
+            start_time = time.time()
+            
+            # Progress tracking with rate calculation
             last_count = 0
             last_print_time = time.time()
             
             def progress_callback(current_count):
                 nonlocal last_count, last_print_time
                 now = time.time()
+                
                 # Only print progress every 5 seconds to avoid flooding the console
                 if now - last_print_time >= 5:
+                    elapsed = now - last_print_time
+                    evals_since_last = current_count - last_count
+                    
+                    # Calculate rate (evals per second)
+                    rate = evals_since_last / elapsed if elapsed > 0 else 0
+                    
+                    # Format progress message
                     if args.max_evaluations:
-                        print(f"Progress: {current_count}/{args.max_evaluations} evaluations "
-                              f"({current_count/args.max_evaluations*100:.1f}%)")
+                        percent = current_count / args.max_evaluations * 100
+                        remaining = (args.max_evaluations - current_count) / rate if rate > 0 else 0
+                        
+                        print(f"Progress: {current_count:,}/{args.max_evaluations:,} evaluations "
+                              f"({percent:.1f}%) | Rate: {rate:.1f} evals/sec | "
+                              f"Est. remaining: {remaining/60:.1f} min")
                     else:
-                        print(f"Progress: {current_count} evaluations")
+                        print(f"Progress: {current_count:,} evaluations | "
+                              f"Rate: {rate:.1f} evals/sec | "
+                              f"Running time: {(now - start_time)/60:.1f} min")
+                    
                     last_count = current_count
                     last_print_time = now
             
@@ -181,17 +225,36 @@ class CLIAdapter:
                 progress_callback=progress_callback
             )
             
+            # Calculate total runtime
+            total_runtime = time.time() - start_time
+            
             # Get and display final statistics
             stats = self.evolution_use_case.get_population_stats(population)
             self.display_stats(stats)
             
             # Display best agent
             best_agent = max(population, key=lambda a: a.reward if a.reward is not None else float('-inf'))
-            print("\n=== Best Agent ===")
+            
+            print("\n" + "=" * 60)
+            print("BEST AGENT".center(60))
+            print("=" * 60)
             print(f"ID: {best_agent.id}")
             print(f"Reward: {best_agent.reward}")
-            print("Task Chromosome:")
-            print(best_agent.task_chromosome.content)
+            
+            # Show task chromosome with character count
+            task_content = best_agent.task_chromosome.content
+            print(f"\nTask Chromosome ({len(task_content)} chars):")
+            print("-" * 60)
+            print(task_content)
+            print("-" * 60)
+            
+            # Show summary
+            print("\n" + "=" * 60)
+            print(f"Evolution completed in {total_runtime/60:.2f} minutes")
+            print(f"Total evaluations: {stats.get('count', 0):,}")
+            print(f"Final population size: {stats.get('population_size', 0):,}")
+            print(f"Best reward achieved: {stats.get('best', 0):.2f}")
+            print("=" * 60)
             
             return 0
         except KeyboardInterrupt:

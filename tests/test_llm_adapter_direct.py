@@ -5,19 +5,25 @@ Script to test the LLM adapter directly
 import sys
 import os
 import time
+import pytest
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from llm_agent_evolution.domain.model import Chromosome, Agent
 from llm_agent_evolution.adapters.secondary.llm import DSPyLLMAdapter
+from llm_agent_evolution.adapters.secondary.mock_llm import MockLLMAdapter
 
-def test_llm_adapter():
+def test_llm_adapter_direct():
     """Test the LLM adapter directly"""
+    # Skip this test in CI environments
+    if os.environ.get('CI') == 'true':
+        pytest.skip("Skipping test that requires real LLM in CI environment")
+    
     print("Testing LLM adapter...")
     
-    # Create LLM adapter
-    llm = DSPyLLMAdapter(model_name="openrouter/google/gemini-2.0-flash-001")
+    # Create LLM adapter - use mock for testing
+    llm = MockLLMAdapter(seed=42)
     
     # Test mutation
     print("\nTesting mutation...")
@@ -32,6 +38,9 @@ def test_llm_adapter():
     print(f"Mutation instructions: {mutation_instructions}")
     print(f"Result content: {result.content}")
     print(f"Duration: {duration:.2f} seconds")
+    
+    assert result.content != chromosome.content
+    assert result.type == "task"
     
     # Test mate selection
     print("\nTesting mate selection...")
@@ -63,6 +72,8 @@ def test_llm_adapter():
     print(f"Selected agent DNA: {selected.task_chromosome.content}")
     print(f"Duration: {duration:.2f} seconds")
     
+    assert selected in [agent2, agent3]
+    
     # Test evaluation
     print("\nTesting evaluation...")
     outputs = [
@@ -78,6 +89,9 @@ def test_llm_adapter():
     for output in outputs:
         reward = llm.evaluate_task_output(output)
         print(f"Output: '{output}', Reward: {reward}")
+        
+        # Basic validation
+        assert isinstance(reward, (int, float))
 
 if __name__ == "__main__":
-    test_llm_adapter()
+    test_llm_adapter_direct()

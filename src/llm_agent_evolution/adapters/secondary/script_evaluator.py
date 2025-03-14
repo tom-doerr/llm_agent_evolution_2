@@ -79,61 +79,90 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
         if in_cache:
             return cached_reward
         
-        # Ensure script exists and is executable
+        # Ensure script exists
         if not os.path.exists(script_path):
-            raise FileNotFoundError(f"Evaluation script not found: {script_path}")
+            error_msg = f"Evaluation script not found: {script_path}"
+            print(f"Error: {error_msg}")
+            raise FileNotFoundError(error_msg)
         
-        if not os.access(script_path, os.X_OK) and script_path.endswith('.py'):
+        # Determine how to run the script
+        if script_path.endswith('.py'):
             # For Python scripts, we can run them with the Python interpreter
             cmd = [sys.executable, script_path]
         else:
-            # Make sure the script is executable
-            os.chmod(script_path, 0o755)
+            # For other scripts, make sure they're executable
+            if not os.access(script_path, os.X_OK):
+                try:
+                    os.chmod(script_path, 0o755)
+                except Exception as e:
+                    error_msg = f"Could not make script executable: {e}"
+                    print(f"Error: {error_msg}")
+                    raise PermissionError(error_msg)
             cmd = [script_path]
         
-        # Write output to a temporary file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-            temp_file_path = temp_file.name
-            temp_file.write(output)
-        
+        # Create a temporary file for the output
+        temp_file_path = None
         try:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+                temp_file_path = temp_file.name
+                temp_file.write(output)
+            
             # Run the script with the output as stdin
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            # Send the output to the script
-            stdout, stderr = process.communicate(input=output, timeout=timeout)
-            
-            # Check for errors
-            if process.returncode != 0:
-                raise RuntimeError(f"Evaluation script failed with error: {stderr}")
-            
-            # Parse the reward from the last line of output
-            lines = stdout.strip().split('\n')
-            if not lines:
-                raise ValueError("Evaluation script produced no output")
-            
             try:
-                reward = float(lines[-1].strip())
-            except ValueError:
-                raise ValueError(f"Evaluation script did not return a valid numerical reward: {lines[-1]}")
+                process = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                # Send the output to the script
+                stdout, stderr = process.communicate(input=output, timeout=timeout)
+                
+                # Check for errors
+                if process.returncode != 0:
+                    error_msg = f"Evaluation script failed with error: {stderr}"
+                    print(f"Error: {error_msg}")
+                    raise RuntimeError(error_msg)
+                
+                # Parse the reward from the last line of output
+                lines = stdout.strip().split('\n')
+                if not lines:
+                    error_msg = "Evaluation script produced no output"
+                    print(f"Error: {error_msg}")
+                    raise ValueError(error_msg)
+                
+                try:
+                    reward = float(lines[-1].strip())
+                except ValueError:
+                    error_msg = f"Evaluation script did not return a valid numerical reward: {lines[-1]}"
+                    print(f"Error: {error_msg}")
+                    raise ValueError(error_msg)
+                
+                # Update cache
+                self._update_cache(output, script_path, reward)
+                
+                return reward
+                
+            except subprocess.TimeoutExpired:
+                error_msg = f"Evaluation script timed out after {timeout} seconds"
+                print(f"Error: {error_msg}")
+                raise TimeoutError(error_msg)
             
-            # Update cache
-            self._update_cache(output, script_path, reward)
+        except Exception as e:
+            # Catch any other exceptions and provide more context
+            error_msg = f"Unexpected error during script evaluation: {str(e)}"
+            print(f"Error: {error_msg}")
+            raise RuntimeError(error_msg) from e
             
-            return reward
-            
-        except subprocess.TimeoutExpired:
-            raise TimeoutError(f"Evaluation script timed out after {timeout} seconds")
         finally:
             # Clean up temporary file
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception as e:
+                    print(f"Warning: Could not remove temporary file {temp_file_path}: {e}")
     
     def evaluate_batch(self, outputs: List[str], script_path: str, 
                       timeout: int = 30, parallel: bool = True) -> List[float]:
