@@ -108,9 +108,8 @@ class DSPyLLMAdapter(LLMPort):
         # Calculate reward
         reward = a_count - length_penalty
         
-        # Print debug info for important cases
-        if a_count > 20 or reward > 20:
-            print(f"Debug - High reward output: '{output[:50]}{'...' if len(output) > 50 else ''}'")
-            print(f"Debug - a_count: {a_count}, length_penalty: {length_penalty}, reward: {reward}")
+        # Print debug info for all evaluations
+        print(f"Eval - Text: '{output[:50]}{'...' if len(output) > 50 else ''}'")
+        print(f"Eval - a_count: {a_count}, length_penalty: {length_penalty}, reward: {reward}")
         
         return reward

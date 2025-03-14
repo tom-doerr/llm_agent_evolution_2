@@ -86,12 +86,28 @@ class UniversalOptimizer:
         """Initialize a population with the given size"""
         population = []
         
-        # Create initial agents with empty or provided content
+        # Create initial agents with meaningful chromosomes
         for _ in range(self.population_size):
+            # Initial task chromosome with some content
+            task_content = self.initial_content if self.initial_content else "a" * 5
+            
+            # Initial mate selection chromosome with instructions
+            mate_selection_content = """
+            Select the mate with the highest reward.
+            If rewards are equal, choose the one with more 'a' characters.
+            """
+            
+            # Initial mutation chromosome with instructions
+            mutation_content = """
+            Rephrase the content to include more 'a' characters.
+            Keep the length around 23 characters.
+            Try different patterns and placements of 'a' characters.
+            """
+            
             agent = Agent(
-                task_chromosome=Chromosome(content=self.initial_content, type="task"),
-                mate_selection_chromosome=Chromosome(content="", type="mate_selection"),
-                mutation_chromosome=Chromosome(content="", type="mutation")
+                task_chromosome=Chromosome(content=task_content, type="task"),
+                mate_selection_chromosome=Chromosome(content=mate_selection_content, type="mate_selection"),
+                mutation_chromosome=Chromosome(content=mutation_content, type="mutation")
             )
             population.append(agent)
         
