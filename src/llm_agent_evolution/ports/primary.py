@@ -44,6 +44,7 @@ class EvolutionUseCase(ABC):
     def run_evolution(self, 
                      population_size: int, 
                      parallel_agents: int,
-                     max_evaluations: Optional[int] = None) -> List[Agent]:
+                     max_evaluations: Optional[int] = None,
+                     progress_callback: Optional[callable] = None) -> List[Agent]:
         """Run the evolution process with the given parameters"""
         pass

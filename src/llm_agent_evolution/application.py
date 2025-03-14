@@ -11,6 +11,7 @@ from .domain.services import select_parents_pareto, mate_agents
 from .ports.primary import EvolutionUseCase
 from .ports.secondary import LLMPort, LoggingPort, StatisticsPort
 from .adapters.secondary.llm import DSPyLLMAdapter
+from .adapters.secondary.mock_llm import MockLLMAdapter
 from .adapters.secondary.logging import FileLoggingAdapter
 from .adapters.secondary.statistics import StatisticsAdapter
 from .adapters.primary.cli import CLIAdapter
@@ -175,7 +176,8 @@ class EvolutionService(EvolutionUseCase):
     def run_evolution(self, 
                      population_size: int, 
                      parallel_agents: int,
-                     max_evaluations: Optional[int] = None) -> List[Agent]:
+                     max_evaluations: Optional[int] = None,
+                     progress_callback: Optional[callable] = None) -> List[Agent]:
         """Run the evolution process with the given parameters"""
         # Initialize log
         self.logging_port.initialize_log()
@@ -201,6 +203,7 @@ class EvolutionService(EvolutionUseCase):
                 # Monitor progress
                 evaluation_count = 0
                 last_stats_time = time.time()
+                last_progress_time = time.time()
                 
                 while True:
                     # Check if we've reached max evaluations
@@ -208,10 +211,14 @@ class EvolutionService(EvolutionUseCase):
                     if max_evaluations and current_count >= max_evaluations:
                         break
                     
+                    # Call progress callback if provided (not too frequently)
+                    if progress_callback and time.time() - last_progress_time > 0.5:
+                        progress_callback(current_count)
+                        last_progress_time = time.time()
+                    
                     # Display stats periodically
                     if time.time() - last_stats_time > 10:  # Every 10 seconds
                         stats = self.get_population_stats(population)
-                        print(f"\rEvaluations: {current_count}", end="")
                         last_stats_time = time.time()
                     
                     time.sleep(0.1)
@@ -235,10 +242,16 @@ class EvolutionService(EvolutionUseCase):
         return population
 
 def create_application(model_name: str = "openrouter/google/gemini-2.0-flash-001",
-                      log_file: str = "evolution.log") -> CLIAdapter:
+                      log_file: str = "evolution.log",
+                      use_mock: bool = False,
+                      random_seed: Optional[int] = None) -> CLIAdapter:
     """Create and wire the application components"""
     # Create adapters
-    llm_adapter = DSPyLLMAdapter(model_name=model_name)
+    if use_mock:
+        llm_adapter = MockLLMAdapter(seed=random_seed)
+    else:
+        llm_adapter = DSPyLLMAdapter(model_name=model_name)
+        
     logging_adapter = FileLoggingAdapter(log_file=log_file)
     statistics_adapter = StatisticsAdapter()
     
@@ -260,12 +273,19 @@ def main():
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--model", default="openrouter/google/gemini-2.0-flash-001")
     parser.add_argument("--log-file", default="evolution.log")
+    parser.add_argument("--use-mock", action="store_true", help="Use mock LLM adapter for testing")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
     
     # Only parse known args to get these values
     args, _ = parser.parse_known_args()
     
     # Create the application
-    cli = create_application(model_name=args.model, log_file=args.log_file)
+    cli = create_application(
+        model_name=args.model, 
+        log_file=args.log_file,
+        use_mock=args.use_mock,
+        random_seed=args.seed
+    )
     
     # Run the application
     return cli.run()
