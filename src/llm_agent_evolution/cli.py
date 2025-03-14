@@ -319,17 +319,23 @@ def _add_demo_subparser(subparsers):
 def _handle_default_command(args):
     """Handle the default command (no subcommand specified)"""
     # If quick-test is specified, run the quick test
-    if args.quick_test:
+    if hasattr(args, 'quick_test') and args.quick_test:
         return _handle_quick_test(args)
     
     # If load is specified, run with the loaded agent
-    if args.load:
+    if hasattr(args, 'load') and args.load:
         return _handle_loaded_agent(args)
     
     # If eval_command is specified (either positional or via --eval-command), run the optimizer
-    eval_command = args.eval_command
-    if not eval_command and hasattr(args, 'eval_command'):
+    eval_command = None
+    if hasattr(args, 'eval_command'):
         eval_command = args.eval_command
+    
+    # Check for positional eval_command
+    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+        eval_command = sys.argv[1]
+        # Set it in args for _handle_optimize_command
+        args.eval_command = eval_command
         
     if eval_command:
         # Run the universal optimizer with the eval command
@@ -492,8 +498,17 @@ def _handle_optimize_command(args):
             initial_content = f.read()
     
     # Determine evaluation method
-    eval_script = args.eval_script if hasattr(args, 'eval_script') else None
-    eval_command = args.eval_command
+    eval_script = None
+    if hasattr(args, 'eval_script'):
+        eval_script = args.eval_script
+    
+    eval_command = None
+    if hasattr(args, 'eval_command'):
+        eval_command = args.eval_command
+    
+    # Check for positional eval_command
+    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-'):
+        eval_command = sys.argv[1]
     
     if not eval_script and not eval_command:
         print("Error: Either eval_command or --eval-script must be specified")
@@ -516,28 +531,73 @@ def _handle_optimize_command(args):
         output_format = args.output_format if hasattr(args, 'output_format') else "text"
         max_chars = args.max_chars if hasattr(args, 'max_chars') else 1000
         
+        # Ensure we have model_name
+        model_name = "openrouter/google/gemini-2.0-flash-001"
+        if hasattr(args, 'model'):
+            model_name = args.model
+        
+        # Get population size with fallback
+        population_size = 50
+        if hasattr(args, 'population_size'):
+            population_size = args.population_size
+            
+        # Get parallel agents with fallback
+        parallel_agents = 8
+        if hasattr(args, 'parallel_agents'):
+            parallel_agents = args.parallel_agents
+            
+        # Get max evaluations with fallback
+        max_evaluations = None
+        if hasattr(args, 'max_evaluations'):
+            max_evaluations = args.max_evaluations
+            
+        # Get use_mock with fallback
+        use_mock_llm = False
+        if hasattr(args, 'use_mock'):
+            use_mock_llm = args.use_mock
+            
+        # Get log file with fallback
+        log_file = "universal_optimize.log"
+        if hasattr(args, 'log_file'):
+            log_file = args.log_file
+            
+        # Get random seed with fallback
+        random_seed = None
+        if hasattr(args, 'seed'):
+            random_seed = args.seed
+            
+        # Get output file with fallback
+        output_file = None
+        if hasattr(args, 'save'):
+            output_file = args.save
+            
+        # Get verbose with fallback
+        verbose = False
+        if hasattr(args, 'verbose'):
+            verbose = args.verbose
+        
         result = run_optimizer(
             eval_script=eval_script,
-            population_size=args.population_size,
-            parallel_agents=args.parallel_agents,
-            max_evaluations=args.max_evaluations,
-            use_mock_llm=args.use_mock,
-            model_name=args.model,
-            log_file=args.log_file,
-            random_seed=args.seed,
+            population_size=population_size,
+            parallel_agents=parallel_agents,
+            max_evaluations=max_evaluations,
+            use_mock_llm=use_mock_llm,
+            model_name=model_name,
+            log_file=log_file,
+            random_seed=random_seed,
             script_timeout=script_timeout,
             initial_content=initial_content,
-            output_file=args.save if hasattr(args, 'save') else None,
+            output_file=output_file,
             output_format=output_format,
             max_chars=max_chars,
-            verbose=args.verbose if hasattr(args, 'verbose') else False,
+            verbose=verbose,
             eval_command=eval_command
         )
         
         return 0
     finally:
         # Clean up temporary script if created
-        if eval_command and not eval_script and os.path.exists(eval_script):
+        if eval_command and not eval_script and 'eval_script' in locals() and os.path.exists(eval_script):
             os.remove(eval_script)
 
 def _handle_standalone_command(args):

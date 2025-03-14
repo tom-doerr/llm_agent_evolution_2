@@ -28,7 +28,14 @@ def main(seed=42):
     args.quick_test = True
     args.seed = seed
     args.log_file = "quick_test.log"
-    args.no_visualization = False  # Enable visualization for quick test
+    args.model = "openrouter/google/gemini-2.0-flash-001"  # Add model attribute
+    args.eval_command = None  # Add eval_command attribute
+    args.load = None  # Add load attribute
+    args.context = None  # Add context attribute
+    args.context_file = None  # Add context_file attribute
+    args.initial_content = ""  # Add initial_content attribute
+    args.verbose = False  # Add verbose attribute
+    args.save = None  # Add save attribute
     
     # Store original parse_args method
     original_parse_args = cli.parse_args
