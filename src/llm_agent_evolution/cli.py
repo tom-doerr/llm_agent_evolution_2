@@ -23,9 +23,14 @@ def main():
     
     # Add arguments for the optimize command
     optimize_parser.add_argument(
+        "eval_command",
+        nargs="?",
+        help="Evaluation command (receives agent output via stdin, returns score as last line)"
+    )
+    
+    optimize_parser.add_argument(
         "--eval-script", 
-        required=True,
-        help="Path to the evaluation script"
+        help="Path to the evaluation script (alternative to eval_command)"
     )
     
     optimize_parser.add_argument(
@@ -160,9 +165,30 @@ def main():
             with open(args.initial_file, 'r') as f:
                 initial_content = f.read()
         
+        # Determine evaluation method
+        eval_script = args.eval_script
+        eval_command = args.eval_command
+        
+        if not eval_script and not eval_command:
+            print("Error: Either eval_command or --eval-script must be specified")
+            return 1
+            
+        # If both are provided, eval_command takes precedence
+        if eval_command and not eval_script:
+            # Create a temporary script that runs the eval command
+            import tempfile
+            
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.sh') as f:
+                eval_script = f.name
+                f.write("#!/bin/sh\n")
+                f.write(f"{eval_command}\n")
+            
+            # Make executable
+            os.chmod(eval_script, 0o755)
+        
         # Run the optimizer
-        return run_optimizer(
-            eval_script=args.eval_script,
+        result = run_optimizer(
+            eval_script=eval_script,
             population_size=args.population_size,
             parallel_agents=args.parallel_agents,
             max_evaluations=args.max_evaluations,
@@ -175,8 +201,15 @@ def main():
             output_file=args.output_file,
             output_format=args.output_format,
             max_chars=args.max_chars,
-            verbose=args.verbose
+            verbose=args.verbose,
+            eval_command=eval_command
         )
+        
+        # Clean up temporary script if created
+        if eval_command and not args.eval_script and os.path.exists(eval_script):
+            os.remove(eval_script)
+            
+        return result
     
     elif args.command == "demo":
         # Import the evolution demo

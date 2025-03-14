@@ -6,7 +6,6 @@ from .model import Agent, Chromosome
 # Constants
 CHROMOSOME_SWITCH_PROBABILITY = 0.3  # Probability of switching chromosomes at hotspots
 HOTSPOT_CHARS = ".,;:!?()[]{}'\"\n "  # Punctuation and spaces as hotspots
-TARGET_LENGTH = 23  # Target length for the hidden goal (from LLM adapter)
 
 def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Agent]:
     """
@@ -138,12 +137,13 @@ def combine_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
                         else:
                             result[point:point+len(secondary_content)] = secondary_content
     
-    # For task chromosomes, ensure we don't exceed TARGET_LENGTH by too much
+    # For task chromosomes, ensure we don't exceed a reasonable length
     if parent1.type == "task":
         combined_content = ''.join(result)
-        if len(combined_content) > TARGET_LENGTH * 1.5:  # Allow some flexibility
+        max_length = 1000  # Use a reasonable maximum length
+        if len(combined_content) > max_length:
             # Truncate to a reasonable length
-            combined_content = combined_content[:TARGET_LENGTH + random.randint(0, 5)]
+            combined_content = combined_content[:max_length]
         return Chromosome(content=combined_content, type=parent1.type)
     
     return Chromosome(content=''.join(result), type=parent1.type)

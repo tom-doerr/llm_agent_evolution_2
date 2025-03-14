@@ -60,6 +60,13 @@ class CLIAdapter:
         )
         
         parser.add_argument(
+            "--eval-command",
+            type=str,
+            default=None,
+            help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
+        )
+        
+        parser.add_argument(
             "--seed",
             type=int,
             default=None,

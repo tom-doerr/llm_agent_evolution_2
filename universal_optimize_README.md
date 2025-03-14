@@ -1,17 +1,17 @@
 # Universal Optimizer
 
-A flexible, script-based optimization framework for evolving text outputs against any measurable goal.
+A flexible, command-based optimization framework for evolving text outputs against any measurable goal.
 
 ## Overview
 
 The Universal Optimizer allows you to optimize any text-based output using evolutionary algorithms. It works by:
 
 1. Generating a population of text outputs
-2. Evaluating each output using your custom script
+2. Evaluating each output using your custom command or script
 3. Evolving the population through selection, mating, and mutation
 4. Repeating until optimal solutions are found
 
-The key innovation is the script-based evaluation interface, which allows you to define any optimization goal by writing a simple script that returns a numerical reward.
+The key innovation is the command-based evaluation interface, which allows you to define any optimization goal by providing a command that returns a numerical reward.
 
 ## Installation
 
@@ -26,6 +26,20 @@ pip install -e .
 
 ## Quick Start
 
+You can use the Universal Optimizer in two ways:
+
+### Option 1: Direct Command
+
+Provide an evaluation command directly:
+
+```bash
+./universal_optimize.py "python -c 'import sys; text=sys.stdin.read(); print(len(text))'" --population-size 50 --max-evaluations 1000
+```
+
+This command evaluates text by its length.
+
+### Option 2: Evaluation Script
+
 1. Create an evaluation script that takes text input via stdin and outputs a numerical reward as its last line:
 
 ```python
@@ -36,7 +50,7 @@ import sys
 text = sys.stdin.read()
 
 # Calculate reward (higher is better)
-reward = text.count('a')  # Simple example: count 'a's
+reward = len(text)  # Simple example: reward by length
 
 # Print reward as the last line
 print(reward)
@@ -57,7 +71,8 @@ chmod +x my_eval_script.py
 ## Command Line Options
 
 ```
---eval-script SCRIPT     Path to the evaluation script (required)
+EVAL_COMMAND            Evaluation command (receives agent output via stdin, returns score as last line)
+--eval-script SCRIPT     Path to the evaluation script (alternative to EVAL_COMMAND)
 --population-size N      Initial population size (default: 50)
 --parallel-agents N      Number of agents to evaluate in parallel (default: 8)
 --max-evaluations N      Maximum number of evaluations to run (default: unlimited)
@@ -71,6 +86,7 @@ chmod +x my_eval_script.py
 --output-file FILE       File to write the best result to
 --output-format FORMAT   Output format: text or json (default: text)
 --max-chars N            Maximum number of characters for chromosomes (default: 1000)
+--verbose                Enable verbose output (limited to first 5 agents)
 ```
 
 ## Evaluation Scripts

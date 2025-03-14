@@ -288,13 +288,18 @@ def create_application(model_name: str = "openrouter/google/gemini-2.0-flash-001
                       log_file: str = "evolution.log",
                       use_mock: bool = False,
                       random_seed: Optional[int] = None,
-                      enable_visualization: bool = True) -> CLIAdapter:
+                      enable_visualization: bool = True,
+                      eval_command: Optional[str] = None) -> CLIAdapter:
     """Create and wire the application components"""
     # Create adapters
     if use_mock:
         llm_adapter = MockLLMAdapter(seed=random_seed)
     else:
         llm_adapter = DSPyLLMAdapter(model_name=model_name)
+        
+    # Set evaluation command if provided
+    if eval_command:
+        llm_adapter.eval_command = eval_command
         
     logging_adapter = FileLoggingAdapter(log_file=log_file)
     statistics_adapter = StatisticsAdapter()
@@ -335,6 +340,8 @@ def main():
                        default=int(os.environ.get("MAX_EVALUATIONS", "0")) or None)
     parser.add_argument("--no-visualization", action="store_true", 
                        help="Disable visualization generation")
+    parser.add_argument("--eval-command", type=str, default=None,
+                       help="Command to run for evaluation")
     
     # Check if USE_MOCK is set in environment
     if os.environ.get("USE_MOCK") == "1":
@@ -349,7 +356,8 @@ def main():
         log_file=args.log_file,
         use_mock=args.use_mock,
         random_seed=args.seed,
-        enable_visualization=not args.no_visualization
+        enable_visualization=not args.no_visualization,
+        eval_command=args.eval_command
     )
     
     # Run the application

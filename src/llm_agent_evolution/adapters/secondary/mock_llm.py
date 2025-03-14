@@ -10,19 +10,21 @@ class MockLLMAdapter(LLMPort):
         """Initialize the mock LLM adapter with an optional random seed"""
         if seed is not None:
             random.seed(seed)
+        self.eval_command = None  # Will be set by the application
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
         """Generate a mock mutation for a chromosome"""
-        # For task chromosomes, generate strings with 'a's to test the hidden goal
+        # For task chromosomes, generate random content without leaking the task
         if chromosome.type == "task":
-            # Generate random number of 'a's (0-23)
-            a_count = random.randint(0, 23)
-            content = 'a' * a_count
-            
-            # Sometimes add extra characters
-            if random.random() < 0.3:
-                extra_chars = random.randint(1, 10)
-                content += 'x' * extra_chars
+            # Generate random content
+            options = [
+                "Hello world",
+                "Testing the mutation",
+                "This is a sample output",
+                "Random text for evaluation",
+                "The quick brown fox jumps over the lazy dog"
+            ]
+            content = random.choice(options)
         else:
             # For other chromosome types, generate simple instructions
             options = [
@@ -48,17 +50,37 @@ class MockLLMAdapter(LLMPort):
     
     def evaluate_task_output(self, output: str) -> float:
         """
-        Evaluate the output based on the hidden goal:
-        - Reward increases for every 'a' for the first 23 characters
-        - Reward decreases for every character after 23 characters
+        Evaluate the output using the specified evaluation command
+        If no command is set, returns a random score for testing
         """
-        # Count 'a's in the first 23 characters
-        a_count = output[:23].count('a')
+        if not self.eval_command:
+            # For testing, return a random score
+            return random.uniform(0, 10)
+            
+        # Use the script evaluator to run the command
+        from llm_agent_evolution.adapters.secondary.script_evaluator import ScriptEvaluatorAdapter
+        evaluator = ScriptEvaluatorAdapter()
         
-        # Penalty for exceeding 23 characters
-        length_penalty = max(0, len(output) - 23)
-        
-        # Calculate reward
-        reward = a_count - length_penalty
-        
-        return reward
+        try:
+            # Create a temporary script that runs the eval command
+            import tempfile
+            import os
+            
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.sh') as f:
+                script_path = f.name
+                f.write("#!/bin/sh\n")
+                f.write(f"{self.eval_command}\n")
+            
+            # Make executable
+            os.chmod(script_path, 0o755)
+            
+            # Evaluate
+            reward = evaluator.evaluate(output, script_path)
+            
+            # Clean up
+            os.remove(script_path)
+            
+            return reward
+        except Exception as e:
+            print(f"Evaluation error: {e}")
+            return random.uniform(0, 5)  # Fallback for testing

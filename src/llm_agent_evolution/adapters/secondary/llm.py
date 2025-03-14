@@ -5,7 +5,6 @@ from llm_agent_evolution.ports.secondary import LLMPort
 
 # Constants from spec
 MAX_OUTPUT_TOKENS = 40  # Limit token output for the DSPy LM
-TARGET_LENGTH = 23  # Target length for the hidden goal
 
 class DSPyLLMAdapter(LLMPort):
     """Adapter for LLM interactions using DSPy"""
@@ -13,6 +12,7 @@ class DSPyLLMAdapter(LLMPort):
     def __init__(self, model_name: str = "openrouter/google/gemini-2.0-flash-001"):
         """Initialize the LLM adapter with the specified model"""
         self.lm = dspy.LM(model_name)
+        self.eval_command = None  # Will be set by the application
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
         """Generate a mutation for a chromosome based on instructions"""
@@ -95,21 +95,37 @@ class DSPyLLMAdapter(LLMPort):
     
     def evaluate_task_output(self, output: str) -> float:
         """
-        Evaluate the output based on the hidden goal:
-        - Reward increases for every 'a' for the first TARGET_LENGTH characters
-        - Reward decreases for every character after TARGET_LENGTH characters
+        Evaluate the output using the specified evaluation command
+        If no command is set, returns 0
         """
-        # Count 'a's in the first TARGET_LENGTH characters
-        a_count = output[:TARGET_LENGTH].count('a')
+        if not self.eval_command:
+            print("Warning: No evaluation command set")
+            return 0
+            
+        # Use the script evaluator to run the command
+        from llm_agent_evolution.adapters.secondary.script_evaluator import ScriptEvaluatorAdapter
+        evaluator = ScriptEvaluatorAdapter()
         
-        # Penalty for exceeding TARGET_LENGTH
-        length_penalty = max(0, len(output) - TARGET_LENGTH)
-        
-        # Calculate reward
-        reward = a_count - length_penalty
-        
-        # Print debug info for all evaluations
-        print(f"Eval - Text: '{output[:50]}{'...' if len(output) > 50 else ''}'")
-        print(f"Eval - a_count: {a_count}, length_penalty: {length_penalty}, reward: {reward}")
-        
-        return reward
+        try:
+            # Create a temporary script that runs the eval command
+            import tempfile
+            import os
+            
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.sh') as f:
+                script_path = f.name
+                f.write("#!/bin/sh\n")
+                f.write(f"{self.eval_command}\n")
+            
+            # Make executable
+            os.chmod(script_path, 0o755)
+            
+            # Evaluate
+            reward = evaluator.evaluate(output, script_path)
+            
+            # Clean up
+            os.remove(script_path)
+            
+            return reward
+        except Exception as e:
+            print(f"Evaluation error: {e}")
+            return 0

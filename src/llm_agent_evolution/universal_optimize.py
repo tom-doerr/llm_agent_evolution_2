@@ -88,19 +88,19 @@ class UniversalOptimizer:
         # Create initial agents with meaningful chromosomes
         for _ in range(self.population_size):
             # Initial task chromosome with some content
-            task_content = self.initial_content if self.initial_content else "a" * 5
+            task_content = self.initial_content if self.initial_content else ""
             
             # Initial mate selection chromosome with instructions
             mate_selection_content = """
             Select the mate with the highest reward.
-            If rewards are equal, choose the one with more 'a' characters.
+            If rewards are equal, choose the one with more diverse content.
             """
             
             # Initial mutation chromosome with instructions
             mutation_content = """
-            Rephrase the content to include more 'a' characters.
-            Keep the length around 23 characters.
-            Try different patterns and placements of 'a' characters.
+            Improve the content to maximize the evaluation score.
+            Try different approaches and patterns.
+            Keep the content concise and focused.
             """
             
             agent = Agent(
@@ -233,25 +233,37 @@ class UniversalOptimizer:
                     print(f"Parent 1 (ID: {parent1.id}):")
                     print(f"Reward: {parent1.reward}")
                     print(f"Task: '{parent1.task_chromosome.content[:50]}{'...' if len(parent1.task_chromosome.content) > 50 else ''}'")
+                    print(f"Mate Selection: '{parent1.mate_selection_chromosome.content[:50]}{'...' if len(parent1.mate_selection_chromosome.content) > 50 else ''}'")
+                    print(f"Mutation: '{parent1.mutation_chromosome.content[:50]}{'...' if len(parent1.mutation_chromosome.content) > 50 else ''}'")
                     
                     print(f"\nParent 2 (ID: {parent2.id}):")
                     print(f"Reward: {parent2.reward}")
                     print(f"Task: '{parent2.task_chromosome.content[:50]}{'...' if len(parent2.task_chromosome.content) > 50 else ''}'")
+                    print(f"Mate Selection: '{parent2.mate_selection_chromosome.content[:50]}{'...' if len(parent2.mate_selection_chromosome.content) > 50 else ''}'")
+                    print(f"Mutation: '{parent2.mutation_chromosome.content[:50]}{'...' if len(parent2.mutation_chromosome.content) > 50 else ''}'")
                     
                     print("\n2. MATING")
                     print(f"New agent after mating (ID: {new_agent.id}):")
                     print(f"Task: '{new_agent.task_chromosome.content[:50]}{'...' if len(new_agent.task_chromosome.content) > 50 else ''}'")
+                    print(f"Mate Selection: '{new_agent.mate_selection_chromosome.content[:50]}{'...' if len(new_agent.mate_selection_chromosome.content) > 50 else ''}'")
+                    print(f"Mutation: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
                 
                 # Mutate the new agent
                 if self.verbose:
                     print("\n3. MUTATION")
                     print(f"Mutation instructions: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
-                    print(f"Before mutation: '{new_agent.task_chromosome.content[:50]}{'...' if len(new_agent.task_chromosome.content) > 50 else ''}'")
+                    print(f"Before mutation:")
+                    print(f"Task: '{new_agent.task_chromosome.content[:50]}{'...' if len(new_agent.task_chromosome.content) > 50 else ''}'")
+                    print(f"Mate Selection: '{new_agent.mate_selection_chromosome.content[:50]}{'...' if len(new_agent.mate_selection_chromosome.content) > 50 else ''}'")
+                    print(f"Mutation: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
                 
                 mutated_agent = self.mutate_agent(new_agent)
                 
                 if self.verbose:
-                    print(f"After mutation: '{mutated_agent.task_chromosome.content[:50]}{'...' if len(mutated_agent.task_chromosome.content) > 50 else ''}'")
+                    print(f"After mutation:")
+                    print(f"Task: '{mutated_agent.task_chromosome.content[:50]}{'...' if len(mutated_agent.task_chromosome.content) > 50 else ''}'")
+                    print(f"Mate Selection: '{mutated_agent.mate_selection_chromosome.content[:50]}{'...' if len(mutated_agent.mate_selection_chromosome.content) > 50 else ''}'")
+                    print(f"Mutation: '{mutated_agent.mutation_chromosome.content[:50]}{'...' if len(mutated_agent.mutation_chromosome.content) > 50 else ''}'")
                 
                 # Evaluate the agent
                 if self.verbose:
@@ -276,6 +288,13 @@ class UniversalOptimizer:
                         )
                         # Keep only the top agents
                         self.population = sorted_population[:1000000]  # MAX_POPULATION_SIZE
+                        
+                    # Limit verbose output to first 5 agents after initial population
+                    if self.verbose and len(self.population) > self.population_size + 5:
+                        self.verbose = False
+                        print("\n" + "=" * 40)
+                        print("Limiting verbose output to first 5 agents")
+                        print("=" * 40)
                 
             except Exception as e:
                 print(f"Worker error: {e}")
@@ -544,7 +563,8 @@ def run_optimizer(
     output_file: Optional[str] = None,
     output_format: str = "text",
     max_chars: int = 1000,
-    verbose: bool = False
+    verbose: bool = False,
+    eval_command: Optional[str] = None
 ) -> int:
     """Run the universal optimizer with the given parameters"""
     # Check if evaluation script exists
@@ -574,6 +594,10 @@ def run_optimizer(
         max_chars=max_chars,
         verbose=verbose
     )
+    
+    # Set the eval command if provided
+    if eval_command and optimizer.llm_adapter:
+        optimizer.llm_adapter.eval_command = eval_command
     
     print(f"Starting optimization with {population_size} agents and {parallel_agents} parallel workers")
     print(f"Evaluation script: {eval_script}")
