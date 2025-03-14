@@ -332,9 +332,14 @@ class UniversalOptimizer:
                 # Call progress callback if provided (not too frequently)
                 if progress_callback and time.time() - last_progress_time > 0.5:
                     try:
-                        progress_callback(current_count, max_evaluations)
+                        # Try with both arguments first
+                        if max_evaluations:
+                            progress_callback(current_count, max_evaluations)
+                        else:
+                            # If max_evaluations is None, try with just current_count
+                            progress_callback(current_count)
                     except TypeError:
-                        # Try with single argument for backward compatibility
+                        # If that fails, try with just the current count
                         try:
                             progress_callback(current_count)
                         except Exception as e:

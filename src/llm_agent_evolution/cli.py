@@ -651,7 +651,7 @@ def _handle_optimize_command(args):
             random_seed=random_seed,
             script_timeout=script_timeout,
             initial_content=initial_content,
-            output_file=output_file,
+            save=output_file,
             output_format=output_format,
             max_chars=max_chars,
             verbose=verbose,

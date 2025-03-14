@@ -15,21 +15,38 @@ class FileLoggingAdapter(LoggingPort):
     def initialize_log(self) -> None:
         """Initialize or clear the log file"""
         # Create an empty log file
-        log_dir = os.path.dirname(os.path.abspath(self.log_file))
-        if log_dir and not os.path.exists(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
         try:
+            # Ensure directory exists
+            log_dir = os.path.dirname(os.path.abspath(self.log_file))
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+                
+            # Create or truncate the log file
             with open(self.log_file, 'w') as f:
                 f.write(f"# LLM Agent Evolution Log - Started at {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                 f.write(f"# This log contains detailed information about the evolution process\n")
                 f.write(f"# Format: timestamp | event_type | details\n\n")
+                
+            # Verify the file was created
+            if not os.path.exists(self.log_file):
+                print(f"Error: Log file {self.log_file} was not created")
+            elif os.path.getsize(self.log_file) == 0:
+                print(f"Warning: Log file {self.log_file} was created but is empty")
+                
+            print(f"Log initialized at: {self.log_file}")
         except Exception as e:
-            print(f"Warning: Could not initialize log file {self.log_file}: {e}")
+            import traceback
+            print(f"Error initializing log file {self.log_file}: {e}")
+            print(traceback.format_exc())
     
     def log_evaluation(self, agent: Agent) -> None:
         """Log an agent evaluation"""
         self.evaluation_count += 1
         try:
+            # Ensure the log file exists
+            if not os.path.exists(self.log_file):
+                self.initialize_log()
+                
             with open(self.log_file, 'a') as f:
                 f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] EVALUATION #{self.evaluation_count}\n")
                 f.write(f"Agent ID: {agent.id}\n")
@@ -39,7 +56,9 @@ class FileLoggingAdapter(LoggingPort):
                 f.write(f"Mutation Chromosome ({len(agent.mutation_chromosome.content)} chars): {agent.mutation_chromosome.content[:50]}{'...' if len(agent.mutation_chromosome.content) > 50 else ''}\n")
                 f.write("\n")
         except Exception as e:
-            print(f"Warning: Could not log evaluation to {self.log_file}: {e}")
+            import traceback
+            print(f"Error logging evaluation to {self.log_file}: {e}")
+            print(traceback.format_exc())
     
     def log_population_stats(self, stats: Dict[str, Any]) -> None:
         """Log population statistics"""
