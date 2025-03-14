@@ -56,17 +56,25 @@ class MockLLMAdapter(LLMPort):
         - Reward decreases for every character after 23 characters
         """
         if not self.eval_command:
-            # Count 'a's in the first 23 characters
-            a_count = output[:23].count('a')
-            
-            # Penalty for exceeding 23 characters
-            length_penalty = max(0, len(output) - 23)
-            
-            # Calculate reward
-            reward = a_count - length_penalty
-            
-            return reward
-            
+            return self._evaluate_hidden_goal(output)
+        else:
+            return self._evaluate_with_command(output)
+    
+    def _evaluate_hidden_goal(self, output: str) -> float:
+        """Evaluate using the hidden goal (a's in first 23 chars)"""
+        # Count 'a's in the first 23 characters
+        a_count = output[:23].count('a')
+        
+        # Penalty for exceeding 23 characters
+        length_penalty = max(0, len(output) - 23)
+        
+        # Calculate reward
+        reward = a_count - length_penalty
+        
+        return reward
+    
+    def _evaluate_with_command(self, output: str) -> float:
+        """Evaluate using the specified command"""
         # Use the script evaluator to run the command
         from llm_agent_evolution.adapters.secondary.script_evaluator import ScriptEvaluatorAdapter
         evaluator = ScriptEvaluatorAdapter()

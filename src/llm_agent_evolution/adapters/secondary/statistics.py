@@ -49,40 +49,59 @@ class StatisticsAdapter(StatisticsPort):
         """Get current statistics"""
         with self.lock:
             if not self.rewards:
-                return {
-                    "count": 0,
-                    "mean": None,
-                    "median": None,
-                    "std_dev": None,
-                    "best": None,
-                    "worst": None,
-                    "improvement_rate": None,
-                    "time_since_last_best": None
-                }
+                return self._get_empty_stats()
             
-            # Calculate improvement rate (improvements per minute)
-            current_time = time.time()
-            time_since_last_best = current_time - self.last_best_time
+            # Calculate basic statistics
+            basic_stats = self._calculate_basic_stats()
             
-            # Calculate improvement rate over the last 10 improvements or all if fewer
-            recent_improvements = self.improvement_rate[-10:] if self.improvement_rate else []
-            if recent_improvements:
-                total_improvement = sum(imp for _, imp, _ in recent_improvements)
-                total_time = sum(t for _, _, t in recent_improvements)
-                improvement_per_minute = (total_improvement / total_time * 60) if total_time > 0 else 0
-            else:
-                improvement_per_minute = 0
+            # Calculate improvement metrics
+            improvement_metrics = self._calculate_improvement_metrics()
             
-            return {
-                "count": len(self.rewards),
-                "mean": np.mean(self.rewards),
-                "median": np.median(self.rewards),
-                "std_dev": np.std(self.rewards),
-                "best": self.best_reward,
-                "worst": self.worst_reward,
-                "improvement_rate": improvement_per_minute,
-                "time_since_last_best": time_since_last_best
-            }
+            # Combine and return all statistics
+            return {**basic_stats, **improvement_metrics}
+    
+    def _get_empty_stats(self) -> Dict[str, Any]:
+        """Return empty statistics when no rewards are available"""
+        return {
+            "count": 0,
+            "mean": None,
+            "median": None,
+            "std_dev": None,
+            "best": None,
+            "worst": None,
+            "improvement_rate": None,
+            "time_since_last_best": None
+        }
+    
+    def _calculate_basic_stats(self) -> Dict[str, Any]:
+        """Calculate basic statistics from rewards"""
+        return {
+            "count": len(self.rewards),
+            "mean": np.mean(self.rewards),
+            "median": np.median(self.rewards),
+            "std_dev": np.std(self.rewards),
+            "best": self.best_reward,
+            "worst": self.worst_reward
+        }
+    
+    def _calculate_improvement_metrics(self) -> Dict[str, Any]:
+        """Calculate improvement-related metrics"""
+        current_time = time.time()
+        time_since_last_best = current_time - self.last_best_time
+        
+        # Calculate improvement rate over the last 10 improvements or all if fewer
+        recent_improvements = self.improvement_rate[-10:] if self.improvement_rate else []
+        if recent_improvements:
+            total_improvement = sum(imp for _, imp, _ in recent_improvements)
+            total_time = sum(t for _, _, t in recent_improvements)
+            improvement_per_minute = (total_improvement / total_time * 60) if total_time > 0 else 0
+        else:
+            improvement_per_minute = 0
+        
+        return {
+            "improvement_rate": improvement_per_minute,
+            "time_since_last_best": time_since_last_best
+        }
     
     def get_sliding_window_stats(self, window_size: int = 100) -> Dict[str, Any]:
         """Get statistics for the sliding window of recent evaluations"""

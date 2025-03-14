@@ -16,7 +16,32 @@ class DSPyLLMAdapter(LLMPort):
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
         """Generate a mutation for a chromosome based on instructions"""
-        prompt = f"""
+        try:
+            # Create prompt for mutation
+            prompt = self._create_mutation_prompt(chromosome, mutation_instructions)
+            
+            # Generate the mutation
+            response = self.lm(prompt, max_tokens=MAX_OUTPUT_TOKENS)
+            
+            # Process the response
+            response_text = self._process_llm_response(response)
+            
+            # Create and return the new chromosome
+            return Chromosome(
+                content=response_text.strip(),
+                type=chromosome.type
+            )
+        except Exception as e:
+            print(f"Error generating mutation: {e}")
+            # Return a copy of the original chromosome if mutation fails
+            return Chromosome(
+                content=chromosome.content,
+                type=chromosome.type
+            )
+    
+    def _create_mutation_prompt(self, chromosome: Chromosome, mutation_instructions: str) -> str:
+        """Create a prompt for mutation"""
+        return f"""
         You are modifying a chromosome for an AI agent.
         
         Original chromosome content:
@@ -27,27 +52,40 @@ class DSPyLLMAdapter(LLMPort):
         
         Provide only the modified chromosome content:
         """
-        
-        # Generate the mutation
-        response = self.lm(prompt, max_tokens=MAX_OUTPUT_TOKENS)
-        
+    
+    def _process_llm_response(self, response: Any) -> str:
+        """Process the LLM response into a string"""
         # Handle different response types (DSPy might return a list)
         if isinstance(response, list):
-            response_text = " ".join(str(item) for item in response)
+            return " ".join(str(item) for item in response)
         else:
-            response_text = str(response)
-        
-        # Create and return the new chromosome
-        return Chromosome(
-            content=response_text.strip(),
-            type=chromosome.type
-        )
+            return str(response)
     
     def select_mate(self, agent: Agent, candidates: List[Agent]) -> Agent:
         """Select a mate from candidates based on agent's mate selection chromosome"""
         if not candidates:
             return None
         
+        try:
+            # Create prompt for mate selection
+            prompt = self._create_mate_selection_prompt(agent, candidates)
+            
+            # Generate the selection
+            response = self.lm(prompt, max_tokens=5)
+            
+            # Process the response
+            response_text = self._process_llm_response(response)
+            
+            # Parse the selection
+            return self._parse_mate_selection(response_text, candidates)
+        except Exception as e:
+            print(f"Error selecting mate: {e}")
+            # Return a random candidate if selection fails
+            import random
+            return random.choice(candidates)
+    
+    def _create_mate_selection_prompt(self, agent: Agent, candidates: List[Agent]) -> str:
+        """Create a prompt for mate selection"""
         # Create a prompt with candidate information
         candidates_info = "\n\n".join([
             f"Candidate {i+1} ID: {candidate.id}\n"
@@ -58,7 +96,7 @@ class DSPyLLMAdapter(LLMPort):
             for i, candidate in enumerate(candidates)
         ])
         
-        prompt = f"""
+        return f"""
         You are selecting a mate for an AI agent.
         
         Your mate selection criteria:
@@ -69,16 +107,9 @@ class DSPyLLMAdapter(LLMPort):
         
         Select one candidate by returning ONLY the number (1-{len(candidates)}) of your choice:
         """
-        
-        # Generate the selection
-        response = self.lm(prompt, max_tokens=5)
-        
-        # Handle different response types (DSPy might return a list)
-        if isinstance(response, list):
-            response_text = " ".join(str(item) for item in response)
-        else:
-            response_text = str(response)
-        
+    
+    def _parse_mate_selection(self, response_text: str, candidates: List[Agent]) -> Agent:
+        """Parse the mate selection response"""
         try:
             # Parse the response to get the selected candidate index
             selection = int(response_text.strip()) - 1

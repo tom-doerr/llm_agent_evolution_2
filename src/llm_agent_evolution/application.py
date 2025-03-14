@@ -146,22 +146,11 @@ class EvolutionService(EvolutionUseCase):
         """Worker function for evolution thread"""
         while not self.stop_event.is_set():
             try:
-                # Select parents
-                parents = self.select_parents(population, 2)
-                if len(parents) < 2:
-                    # Not enough parents, create random agents
-                    new_agent = Agent(
-                        task_chromosome=Chromosome(content="", type="task"),
-                        mate_selection_chromosome=Chromosome(content="", type="mate_selection"),
-                        mutation_chromosome=Chromosome(content="", type="mutation")
-                    )
-                else:
-                    # Select mate using the first parent's mate selection chromosome
-                    parent1 = parents[0]
-                    parent2 = self.llm_port.select_mate(parent1, [p for p in parents[1:]])
-                    
-                    # Create new agent through mating
-                    new_agent = self.mate_agents(parent1, parent2)
+                # Get parents for mating
+                parents = self._select_parents_for_mating(population)
+                
+                # Create new agent through mating or random initialization
+                new_agent = self._create_new_agent(parents)
                 
                 # Mutate the new agent
                 mutated_agent = self.mutate_agent(new_agent)
@@ -175,6 +164,27 @@ class EvolutionService(EvolutionUseCase):
             except Exception as e:
                 print(f"Worker error: {e}")
                 time.sleep(1)  # Avoid tight loop on errors
+    
+    def _select_parents_for_mating(self, population: List[Agent]) -> List[Agent]:
+        """Select parents for mating from the population"""
+        return self.select_parents(population, 2)
+    
+    def _create_new_agent(self, parents: List[Agent]) -> Agent:
+        """Create a new agent either through mating or random initialization"""
+        if len(parents) < 2:
+            # Not enough parents, create random agent
+            return Agent(
+                task_chromosome=Chromosome(content="", type="task"),
+                mate_selection_chromosome=Chromosome(content="", type="mate_selection"),
+                mutation_chromosome=Chromosome(content="", type="mutation")
+            )
+        else:
+            # Select mate using the first parent's mate selection chromosome
+            parent1 = parents[0]
+            parent2 = self.llm_port.select_mate(parent1, [p for p in parents[1:]])
+            
+            # Create new agent through mating
+            return self.mate_agents(parent1, parent2)
     
     def run_evolution(self, 
                      population_size: int, 

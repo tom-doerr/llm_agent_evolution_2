@@ -18,19 +18,40 @@ def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Age
     if not population or num_parents <= 0:
         return []
     
-    # Filter out agents without rewards
-    valid_agents = [agent for agent in population if agent.reward is not None]
+    # Filter and validate agents
+    valid_agents = _filter_valid_agents(population)
     if not valid_agents:
-        return random.sample(population, min(num_parents, len(population)))
+        return _select_random_agents(population, num_parents)
     
+    # Calculate weights for selection
+    weights = _calculate_selection_weights(valid_agents)
+    
+    # Perform weighted selection
+    selected_parents = _weighted_selection(valid_agents, weights, num_parents)
+    
+    # Add diversity if needed
+    selected_parents = _ensure_diversity(selected_parents, population, num_parents)
+    
+    return selected_parents
+
+def _filter_valid_agents(population: List[Agent]) -> List[Agent]:
+    """Filter out agents without rewards"""
+    return [agent for agent in population if agent.reward is not None]
+
+def _select_random_agents(population: List[Agent], num_agents: int) -> List[Agent]:
+    """Select random agents from the population"""
+    return random.sample(population, min(num_agents, len(population)))
+
+def _calculate_selection_weights(agents: List[Agent]) -> List[float]:
+    """Calculate selection weights based on rewards"""
     # Get reward statistics
-    rewards = [agent.reward for agent in valid_agents]
+    rewards = [agent.reward for agent in agents]
     min_reward = min(rewards)
     max_reward = max(rewards)
     
     # Handle case where all rewards are the same
     if min_reward == max_reward:
-        return random.sample(valid_agents, min(num_parents, len(valid_agents)))
+        return [1.0 / len(agents)] * len(agents)
     
     # Shift rewards to positive range if needed
     if min_reward < 0:
@@ -45,15 +66,16 @@ def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Age
     
     # Normalize weights
     total_weight = sum(squared_rewards)
-    weights = [w / total_weight for w in squared_rewards]
-    
-    # Weighted sampling without replacement
-    selected_parents = []
-    remaining_agents = valid_agents.copy()
+    return [w / total_weight for w in squared_rewards]
+
+def _weighted_selection(agents: List[Agent], weights: List[float], num_select: int) -> List[Agent]:
+    """Perform weighted selection without replacement"""
+    selected = []
+    remaining_agents = agents.copy()
     remaining_weights = weights.copy()
     
-    # Select parents one by one
-    for _ in range(min(num_parents, len(valid_agents))):
+    # Select agents one by one
+    for _ in range(min(num_select, len(agents))):
         if not remaining_agents:
             break
             
@@ -67,25 +89,28 @@ def select_parents_pareto(population: List[Agent], num_parents: int) -> List[Age
             # Select based on weights
             idx = random.choices(range(len(remaining_agents)), weights=normalized_weights, k=1)[0]
         
-        # Add selected agent to parents
-        selected_parents.append(remaining_agents[idx])
+        # Add selected agent to result
+        selected.append(remaining_agents[idx])
         
         # Remove selected agent from candidates
         remaining_agents.pop(idx)
         remaining_weights.pop(idx)
     
-    # Ensure diversity by adding some random agents if needed
-    if len(selected_parents) < num_parents and len(population) > len(selected_parents):
-        remaining_agents = [a for a in population if a not in selected_parents]
+    return selected
+
+def _ensure_diversity(selected: List[Agent], population: List[Agent], target_count: int) -> List[Agent]:
+    """Ensure diversity by adding some random agents if needed"""
+    if len(selected) < target_count and len(population) > len(selected):
+        remaining_agents = [a for a in population if a not in selected]
         # Add a small percentage of random agents for exploration
-        num_random = max(1, int(num_parents * 0.2))
-        random_parents = random.sample(
+        num_random = max(1, int(target_count * 0.2))
+        random_agents = random.sample(
             remaining_agents, 
             min(num_random, len(remaining_agents))
         )
-        selected_parents.extend(random_parents[:num_parents - len(selected_parents)])
+        selected.extend(random_agents[:target_count - len(selected)])
     
-    return selected_parents
+    return selected
 
 def combine_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
     """
@@ -112,10 +137,31 @@ def combine_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
 
 def _combine_task_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
     """Special combination logic for task chromosomes"""
-    # For task chromosomes, prefer content closer to TARGET_LENGTH
+    # Calculate fitness values based on proximity to TARGET_LENGTH
+    p1_value, p2_value = _calculate_length_fitness(parent1, parent2)
+    
+    # Select primary parent based on fitness values
+    primary_parent, secondary_parent = _select_primary_parent(parent1, parent2, p1_value, p2_value)
+    
+    # Find hotspots for crossover
+    hotspots = _find_hotspots(primary_parent.content)
+    
+    # Perform crossover at hotspots
+    result = _perform_crossover(primary_parent.content, secondary_parent.content, hotspots)
+    
+    # Post-process the combined content
+    combined_content = _post_process_task_content(result)
+    
+    return Chromosome(content=combined_content, type="task")
+
+def _calculate_length_fitness(parent1: Chromosome, parent2: Chromosome) -> Tuple[float, float]:
+    """Calculate fitness values based on proximity to TARGET_LENGTH"""
     p1_value = max(0, TARGET_LENGTH - abs(len(parent1.content) - TARGET_LENGTH))
     p2_value = max(0, TARGET_LENGTH - abs(len(parent2.content) - TARGET_LENGTH))
-    
+    return p1_value, p2_value
+
+def _select_primary_parent(parent1: Chromosome, parent2: Chromosome, p1_value: float, p2_value: float) -> Tuple[Chromosome, Chromosome]:
+    """Select primary parent based on fitness values"""
     # If one parent is significantly better, bias toward it
     if p1_value > p2_value * 1.5:
         primary_weight = 0.7  # 70% chance to use parent1 content
@@ -126,20 +172,24 @@ def _combine_task_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chrom
     
     # Determine primary parent based on weighted probability
     if random.random() < primary_weight:
-        primary_parent, secondary_parent = parent1, parent2
+        return parent1, parent2
     else:
-        primary_parent, secondary_parent = parent2, parent1
-    
-    # Find all hotspots in primary parent's content
-    hotspots = [i for i, char in enumerate(primary_parent.content) if char in HOTSPOT_CHARS]
+        return parent2, parent1
+
+def _find_hotspots(content: str) -> List[int]:
+    """Find hotspots for crossover in the content"""
+    hotspots = [i for i, char in enumerate(content) if char in HOTSPOT_CHARS]
     if not hotspots:
         # If no hotspots, add some arbitrary points
-        content_len = len(primary_parent.content)
+        content_len = len(content)
         chunk_size = max(1, content_len // 5)
         hotspots = [i for i in range(chunk_size, content_len, chunk_size)]
-    
+    return hotspots
+
+def _perform_crossover(primary_content: str, secondary_content: str, hotspots: List[int]) -> List[str]:
+    """Perform crossover at hotspots"""
     # Start with primary parent's content
-    result = list(primary_parent.content)
+    result = list(primary_content)
     
     # Calculate target number of switches - aim for ~1 switch per chromosome
     target_switches = 1
@@ -154,15 +204,19 @@ def _combine_task_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chrom
         for point in switch_points:
             if random.random() < CHROMOSOME_SWITCH_PROBABILITY:
                 # Take content from secondary parent from this point
-                if point < len(secondary_parent.content):
-                    secondary_content = list(secondary_parent.content[point:])
+                if point < len(secondary_content):
+                    secondary_content_list = list(secondary_content[point:])
                     
                     # Adjust result length
-                    if point + len(secondary_content) > len(result):
-                        result = result[:point] + secondary_content
+                    if point + len(secondary_content_list) > len(result):
+                        result = result[:point] + secondary_content_list
                     else:
-                        result[point:point+len(secondary_content)] = secondary_content
+                        result[point:point+len(secondary_content_list)] = secondary_content_list
     
+    return result
+
+def _post_process_task_content(result: List[str]) -> str:
+    """Post-process the combined content"""
     # Ensure we don't exceed MAX_CHARS
     combined_content = ''.join(result)
     if len(combined_content) > MAX_CHARS:
@@ -174,26 +228,35 @@ def _combine_task_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chrom
         max_length = int(TARGET_LENGTH * (1.0 + random.random() * 0.5))
         combined_content = combined_content[:max_length]
     
-    return Chromosome(content=combined_content, type="task")
+    return combined_content
 
 def _combine_regular_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Chromosome:
     """Combination logic for non-task chromosomes"""
-    # For other chromosome types, randomly select primary parent
+    # Randomly select primary parent
+    primary_parent, secondary_parent = _random_select_parents(parent1, parent2)
+    
+    # Find hotspots for crossover
+    hotspots = _find_hotspots(primary_parent.content)
+    
+    # Perform crossover with more switch points for regular chromosomes
+    result = _perform_regular_crossover(primary_parent.content, secondary_parent.content, hotspots)
+    
+    # Post-process the combined content
+    combined_content = _post_process_regular_content(result)
+    
+    return Chromosome(content=combined_content, type=parent1.type)
+
+def _random_select_parents(parent1: Chromosome, parent2: Chromosome) -> Tuple[Chromosome, Chromosome]:
+    """Randomly select primary and secondary parents"""
     if random.random() < 0.5:
-        primary_parent, secondary_parent = parent1, parent2
+        return parent1, parent2
     else:
-        primary_parent, secondary_parent = parent2, parent1
-    
-    # Find all hotspots in primary parent's content
-    hotspots = [i for i, char in enumerate(primary_parent.content) if char in HOTSPOT_CHARS]
-    if not hotspots:
-        # If no hotspots, add some arbitrary points
-        content_len = len(primary_parent.content)
-        chunk_size = max(1, content_len // 5)
-        hotspots = [i for i in range(chunk_size, content_len, chunk_size)]
-    
+        return parent2, parent1
+
+def _perform_regular_crossover(primary_content: str, secondary_content: str, hotspots: List[int]) -> List[str]:
+    """Perform crossover at hotspots with more switch points for regular chromosomes"""
     # Start with primary parent's content
-    result = list(primary_parent.content)
+    result = list(primary_content)
     
     # Sort hotspots and select a subset for switching
     hotspots.sort()
@@ -206,21 +269,25 @@ def _combine_regular_chromosomes(parent1: Chromosome, parent2: Chromosome) -> Ch
         for point in switch_points:
             if random.random() < CHROMOSOME_SWITCH_PROBABILITY:
                 # Take content from secondary parent from this point
-                if point < len(secondary_parent.content):
-                    secondary_content = list(secondary_parent.content[point:])
+                if point < len(secondary_content):
+                    secondary_content_list = list(secondary_content[point:])
                     
                     # Adjust result length
-                    if point + len(secondary_content) > len(result):
-                        result = result[:point] + secondary_content
+                    if point + len(secondary_content_list) > len(result):
+                        result = result[:point] + secondary_content_list
                     else:
-                        result[point:point+len(secondary_content)] = secondary_content
+                        result[point:point+len(secondary_content_list)] = secondary_content_list
     
+    return result
+
+def _post_process_regular_content(result: List[str]) -> str:
+    """Post-process the combined content for regular chromosomes"""
     # Ensure we don't exceed MAX_CHARS
     combined_content = ''.join(result)
     if len(combined_content) > MAX_CHARS:
         combined_content = combined_content[:MAX_CHARS]
     
-    return Chromosome(content=combined_content, type=parent1.type)
+    return combined_content
 
 def mate_agents(parent1: Agent, parent2: Agent) -> Agent:
     """

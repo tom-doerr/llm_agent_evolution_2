@@ -200,95 +200,30 @@ class UniversalOptimizer:
         """Worker function for evolution thread"""
         while not self.stop_event.is_set():
             try:
-                with self.population_lock:
-                    if not self.population:
-                        time.sleep(0.1)
-                        continue
-                    
-                    # Select parents
-                    parents = select_parents_pareto(self.population, 2)
+                # Get parents for mating
+                parents = self._select_parents_for_mating()
+                if not parents:
+                    time.sleep(0.1)
+                    continue
                 
-                if len(parents) < 2:
-                    # Not enough parents, create random agents
-                    new_agent = Agent(
-                        task_chromosome=Chromosome(content=self.initial_content, type="task"),
-                        mate_selection_chromosome=Chromosome(content="", type="mate_selection"),
-                        mutation_chromosome=Chromosome(content="", type="mutation")
-                    )
-                else:
-                    # Select mate using the first parent's mate selection chromosome
-                    parent1 = parents[0]
-                    try:
-                        parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
-                        # Create new agent through mating
-                        new_agent = mate_agents(parent1, parent2)
-                    except Exception as e:
-                        print(f"Mate selection error: {e}")
-                        # If mate selection fails, just use the second parent
-                        parent2 = parents[1] if len(parents) > 1 else parent1
-                        new_agent = mate_agents(parent1, parent2)
+                # Create new agent through mating or random initialization
+                new_agent = self._create_new_agent(parents)
                 
-                # Check if we should show verbose output for this agent
-                show_verbose = self.verbose and self.verbose_agent_count < self.max_verbose_agents
+                # Handle verbose output if enabled
+                show_verbose = self._should_show_verbose_output()
                 
-                # Verbose output for parent selection and mating
+                # Show verbose output for parent selection and mating if enabled
                 if show_verbose:
-                    with self.population_lock:
-                        self.verbose_agent_count += 1
-                    
-                    print("\n" + "=" * 60)
-                    print(f"EVOLUTION STEP")
-                    print("=" * 60)
-                    print("\n1. PARENT SELECTION")
-                    print(f"Parent 1 (ID: {parent1.id}):")
-                    print(f"Reward: {parent1.reward}")
-                    print(f"Task Chromosome:")
-                    print(f"{parent1.task_chromosome.content}")
-                    print(f"\nMate Selection Chromosome:")
-                    print(f"{parent1.mate_selection_chromosome.content}")
-                    print(f"\nMutation Chromosome:")
-                    print(f"{parent1.mutation_chromosome.content}")
-        
-                    print(f"\nParent 2 (ID: {parent2.id}):")
-                    print(f"Reward: {parent2.reward}")
-                    print(f"Task Chromosome:")
-                    print(f"{parent2.task_chromosome.content}")
-                    print(f"\nMate Selection Chromosome:")
-                    print(f"{parent2.mate_selection_chromosome.content}")
-                    print(f"\nMutation Chromosome:")
-                    print(f"{parent2.mutation_chromosome.content}")
-                    
-                    print("\n2. MATING")
-                    print(f"New agent after mating (ID: {new_agent.id}):")
-                    print(f"Task Chromosome:")
-                    print(f"{new_agent.task_chromosome.content}")
-                    print(f"\nMate Selection Chromosome:")
-                    print(f"{new_agent.mate_selection_chromosome.content}")
-                    print(f"\nMutation Chromosome:")
-                    print(f"{new_agent.mutation_chromosome.content}")
+                    self._print_verbose_mating_info(parents, new_agent)
                 
                 # Mutate the new agent
                 if show_verbose:
-                    print("\n3. MUTATION")
-                    print(f"Mutation instructions: '{new_agent.mutation_chromosome.content[:50]}{'...' if len(new_agent.mutation_chromosome.content) > 50 else ''}'")
-                    print(f"Before mutation:")
-                    print(f"Task Chromosome:")
-                    print(f"{new_agent.task_chromosome.content}")
-                    print(f"\nMate Selection Chromosome:")
-                    print(f"{new_agent.mate_selection_chromosome.content}")
-                    print(f"\nMutation Chromosome:")
-                    print(f"{new_agent.mutation_chromosome.content}")
+                    self._print_verbose_mutation_start(new_agent)
                 
                 mutated_agent = self.mutate_agent(new_agent)
                 
                 if show_verbose:
-                    print(f"After mutation:")
-                    print(f"Task Chromosome:")
-                    print(f"{mutated_agent.task_chromosome.content}")
-                    print(f"\nMate Selection Chromosome:")
-                    print(f"{mutated_agent.mate_selection_chromosome.content}")
-                    print(f"\nMutation Chromosome:")
-                    print(f"{mutated_agent.mutation_chromosome.content}")
+                    self._print_verbose_mutation_result(mutated_agent)
                 
                 # Evaluate the agent
                 if show_verbose:
@@ -503,6 +438,106 @@ class UniversalOptimizer:
                 "window_stats": {},
                 "cache_stats": {"size": 0, "max_size": 0, "hits": 0, "misses": 0, "hit_ratio": 0}
             }
+    
+    def _select_parents_for_mating(self) -> List[Agent]:
+        """Select parents for mating from the population"""
+        with self.population_lock:
+            if not self.population:
+                return []
+            
+            # Select parents
+            return select_parents_pareto(self.population, 2)
+    
+    def _create_new_agent(self, parents: List[Agent]) -> Agent:
+        """Create a new agent either through mating or random initialization"""
+        if len(parents) < 2:
+            # Not enough parents, create random agent
+            return Agent(
+                task_chromosome=Chromosome(content=self.initial_content, type="task"),
+                mate_selection_chromosome=Chromosome(content="", type="mate_selection"),
+                mutation_chromosome=Chromosome(content="", type="mutation")
+            )
+        else:
+            # Select mate using the first parent's mate selection chromosome
+            parent1 = parents[0]
+            try:
+                parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
+                # Create new agent through mating
+                return mate_agents(parent1, parent2)
+            except Exception as e:
+                print(f"Mate selection error: {e}")
+                # If mate selection fails, just use the second parent
+                parent2 = parents[1] if len(parents) > 1 else parent1
+                return mate_agents(parent1, parent2)
+    
+    def _should_show_verbose_output(self) -> bool:
+        """Determine if verbose output should be shown for the current agent"""
+        if not self.verbose:
+            return False
+            
+        with self.population_lock:
+            if self.verbose_agent_count < self.max_verbose_agents:
+                self.verbose_agent_count += 1
+                return True
+            return False
+    
+    def _print_verbose_mating_info(self, parents: List[Agent], new_agent: Agent) -> None:
+        """Print verbose information about the mating process"""
+        parent1 = parents[0]
+        parent2 = parents[1] if len(parents) > 1 else parent1
+        
+        print("\n" + "=" * 60)
+        print(f"EVOLUTION STEP")
+        print("=" * 60)
+        print("\n1. PARENT SELECTION")
+        print(f"Parent 1 (ID: {parent1.id}):")
+        print(f"Reward: {parent1.reward}")
+        print(f"Task Chromosome:")
+        print(f"{parent1.task_chromosome.content}")
+        print(f"\nMate Selection Chromosome:")
+        print(f"{parent1.mate_selection_chromosome.content}")
+        print(f"\nMutation Chromosome:")
+        print(f"{parent1.mutation_chromosome.content}")
+
+        print(f"\nParent 2 (ID: {parent2.id}):")
+        print(f"Reward: {parent2.reward}")
+        print(f"Task Chromosome:")
+        print(f"{parent2.task_chromosome.content}")
+        print(f"\nMate Selection Chromosome:")
+        print(f"{parent2.mate_selection_chromosome.content}")
+        print(f"\nMutation Chromosome:")
+        print(f"{parent2.mutation_chromosome.content}")
+        
+        print("\n2. MATING")
+        print(f"New agent after mating (ID: {new_agent.id}):")
+        print(f"Task Chromosome:")
+        print(f"{new_agent.task_chromosome.content}")
+        print(f"\nMate Selection Chromosome:")
+        print(f"{new_agent.mate_selection_chromosome.content}")
+        print(f"\nMutation Chromosome:")
+        print(f"{new_agent.mutation_chromosome.content}")
+    
+    def _print_verbose_mutation_start(self, agent: Agent) -> None:
+        """Print verbose information before mutation"""
+        print("\n3. MUTATION")
+        print(f"Mutation instructions: '{agent.mutation_chromosome.content[:50]}{'...' if len(agent.mutation_chromosome.content) > 50 else ''}'")
+        print(f"Before mutation:")
+        print(f"Task Chromosome:")
+        print(f"{agent.task_chromosome.content}")
+        print(f"\nMate Selection Chromosome:")
+        print(f"{agent.mate_selection_chromosome.content}")
+        print(f"\nMutation Chromosome:")
+        print(f"{agent.mutation_chromosome.content}")
+    
+    def _print_verbose_mutation_result(self, agent: Agent) -> None:
+        """Print verbose information after mutation"""
+        print(f"After mutation:")
+        print(f"Task Chromosome:")
+        print(f"{agent.task_chromosome.content}")
+        print(f"\nMate Selection Chromosome:")
+        print(f"{agent.mate_selection_chromosome.content}")
+        print(f"\nMutation Chromosome:")
+        print(f"{agent.mutation_chromosome.content}")
     
     def get_results(self) -> Dict[str, Any]:
         """Get the optimization results"""

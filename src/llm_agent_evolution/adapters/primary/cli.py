@@ -131,54 +131,66 @@ class CLIAdapter:
     
     def display_stats(self, stats: Dict[str, Any]) -> None:
         """Display statistics to the console in a clear, information-dense format"""
-        # Create a horizontal separator
-        separator = "=" * 60
-        
-        print(f"\n{separator}")
-        print(f"POPULATION STATISTICS")
-        print(f"{separator}")
-        
-        # Core statistics in a compact format
-        print(f"Population: {stats.get('population_size', 0):,} agents | "
-              f"Evaluations: {stats.get('count', 0):,}")
+        self._print_stats_header()
+        self._print_population_summary(stats)
         
         if stats.get('mean') is not None:
-            # Format the main statistics in a table-like layout
-            print(f"{separator}")
-            print(f"{'Metric':<15} {'Current':<10} {'Recent Window':<15}")
-            print(f"{separator}")
-            
-            window_stats = stats.get('window_stats', {})
-            window_mean = window_stats.get('mean')
-            window_median = window_stats.get('median')
-            window_std = window_stats.get('std_dev')
-            
-            # Print each metric with both overall and window values
-            window_mean_str = f"{window_mean:.2f}" if window_mean is not None else "N/A"
-            print(f"{'Mean':<15} {stats.get('mean', 0):<10.2f} {window_mean_str}")
-            
-            window_median_str = f"{window_median:.2f}" if window_median is not None else "N/A"
-            print(f"{'Median':<15} {stats.get('median', 0):<10.2f} {window_median_str}")
-            
-            window_std_str = f"{window_std:.2f}" if window_std is not None else "N/A"
-            print(f"{'Std Dev':<15} {stats.get('std_dev', 0):<10.2f} {window_std_str}")
-            
-            print(f"{'Best':<15} {stats.get('best', 0):<10.2f}")
-            print(f"{'Worst':<15} {stats.get('worst', 0):<10.2f}")
-            
-            # Display improvement metrics if available
-            print(f"{separator}")
-            if stats.get('improvement_rate') is not None:
-                print(f"Improvement rate: {stats.get('improvement_rate'):.4f} per minute")
-                
-            if stats.get('time_since_last_best') is not None:
-                minutes = stats.get('time_since_last_best') / 60
-                if minutes < 1:
-                    print(f"Time since last best: {stats.get('time_since_last_best'):.1f} seconds")
-                else:
-                    print(f"Time since last best: {minutes:.2f} minutes")
+            self._print_stats_table(stats)
+            self._print_improvement_metrics(stats)
         
-        print(f"{separator}")
+        self._print_separator()
+    
+    def _print_separator(self, length: int = 60) -> None:
+        """Print a separator line"""
+        print("=" * length)
+    
+    def _print_stats_header(self) -> None:
+        """Print the statistics header"""
+        print("\n" + "=" * 60)
+        print("POPULATION STATISTICS")
+        print("=" * 60)
+    
+    def _print_population_summary(self, stats: Dict[str, Any]) -> None:
+        """Print the population summary"""
+        print(f"Population: {stats.get('population_size', 0):,} agents | "
+              f"Evaluations: {stats.get('count', 0):,}")
+    
+    def _print_stats_table(self, stats: Dict[str, Any]) -> None:
+        """Print the statistics table"""
+        print("=" * 60)
+        print(f"{'Metric':<15} {'Current':<10} {'Recent Window':<15}")
+        print("=" * 60)
+        
+        window_stats = stats.get('window_stats', {})
+        window_mean = window_stats.get('mean')
+        window_median = window_stats.get('median')
+        window_std = window_stats.get('std_dev')
+        
+        # Print each metric with both overall and window values
+        window_mean_str = f"{window_mean:.2f}" if window_mean is not None else "N/A"
+        print(f"{'Mean':<15} {stats.get('mean', 0):<10.2f} {window_mean_str}")
+        
+        window_median_str = f"{window_median:.2f}" if window_median is not None else "N/A"
+        print(f"{'Median':<15} {stats.get('median', 0):<10.2f} {window_median_str}")
+        
+        window_std_str = f"{window_std:.2f}" if window_std is not None else "N/A"
+        print(f"{'Std Dev':<15} {stats.get('std_dev', 0):<10.2f} {window_std_str}")
+        
+        print(f"{'Best':<15} {stats.get('best', 0):<10.2f}")
+        print(f"{'Worst':<15} {stats.get('worst', 0):<10.2f}")
+    
+    def _print_improvement_metrics(self, stats: Dict[str, Any]) -> None:
+        """Print improvement metrics"""
+        print("=" * 60)
+        if stats.get('improvement_rate') is not None:
+            print(f"Improvement rate: {stats.get('improvement_rate'):.4f} per minute")
+            
+        if stats.get('time_since_last_best') is not None:
+            minutes = stats.get('time_since_last_best') / 60
+            if minutes < 1:
+                print(f"Time since last best: {stats.get('time_since_last_best'):.1f} seconds")
+            else:
+                print(f"Time since last best: {minutes:.2f} minutes")
     
     def run(self) -> int:
         """Run the CLI application"""
