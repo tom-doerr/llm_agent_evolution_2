@@ -1,6 +1,14 @@
 PLEASE WORK ON THE BELOW ITEMS. NEVER MODIFY THE HEADING! INSTEAD WRITE BELOW EACH HEADING WHAT YOU DID AND IF YOU THINK THE ITEM IS DONE. FOR THE QUESTIONS PLEASE ANSWER THEM AS BEST YOU CAN. LEAVE THE HEADING / THE ITEM ITSELF ALONG! LEAVE THIS SENTENCE IN, DON'T REMOVE IT! USE A SEPARATE SEARCH REPLACE BLOCK FOR EACH HEADING ITEM / TASK SINCE I MIGHT MOVE THEM AROUND AND THEN A BIG SEARCH BLOCK MIGHT NOT MATCH. IF YOU ADD ITEMS DON'T ADD TODO AT THE BEGINNING SINCE YOU SHOULDN'T MODIFY THE HEADING AND I DON'T WANT DONE TODOS TO STILL HAVE THE TODO TEXT
 
 
+
+# fix test errors
+# if universal optimize is part of the package why is the file outside the package strucutre? are there other files?
+# do you have suggestions in general?
+
+
+
+
 # is universal optimize part of the package? required for it? 
 Yes, universal_optimize.py is part of the package and provides the universal optimizer functionality. It's been properly integrated into the package structure with:
 1. Core implementation in src/llm_agent_evolution/universal_optimizer_core.py
