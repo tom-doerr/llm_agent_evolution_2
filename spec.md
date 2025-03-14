@@ -13,8 +13,8 @@ parent selection should use:
 include mean, median, std deviation for population reward
 set the default population size limit to one million
 mutation should be llm based, specifically requesting to:
-mate selection should work by loading the dna of agents into the prompt and then using the mate selection chromosome/prompt of the agent allowed to mate to select one of the candidates
-the three chromosomes are task, mate-selection, mutation
+the two chromosomes are task,  and merging (which indirectly also introduces mutation)
+don't include explicit mutation, should be indirect through merging
 mutation should also be evolved, using the mutation chromosome/prompt, which should be used as the instruction on how the llm should modify it
 mating/combingin the genes happens by switching to the chromosome of the other agent with a certain probability at hotspots
 hotspots for chromsome switches should be punctuation but also some probability on just spaces
@@ -24,6 +24,9 @@ statistics should:
 - Use sliding window of last 100 evaluations
 - Show mean, median, std deviation
 - Track best/worst in current population
+statistics should also include which agents were selected for merging
+in verbose mode also show all chromosomes of parent agent and the new meged agent
+when exiting, e.g. using ctrl+c, show even more detailed statistics, maybe even using rich tables
 keep the code minimalistic
 remove complexity when it doesn't impact functionality specified in spec.md
 max chars should be a constant
@@ -37,6 +40,12 @@ make max chromosome length a constant
 please don't use rich progress bars or other progress indicators since they produce a lot of chars and fill up the context
 make it so i can specify a command that is used for evaluation as a string argument
 the agent output is sent as std input to the command and the command returns a score/reward on the last line which is used for the optimization
+the agent can be saved using --save, with an optional filename
+the agent is saved as a toml file
+the agent can be loaded with --load, optionally with a toml file as an argument
+it's possible to pipe stdin to the agent which is then input to the agent
+keep the cli interface small
+keep modules small in general
 
 as a task i want to optimize this hidden goal for testing: reward increases for every a for the first 23 characters and decreases for every character after 23 characters. limit token output to 40 for the dspy lm
 don't do reward shaping
@@ -63,6 +72,9 @@ remove duplicates from the task list
 use many assertions 
 please include an argparse cli interface
 put put the if __name__ == ... block at the bottom
+do use TODO comments a lot
+do include e2e tests with real api calls
+there should be at least one e2e tests that assesses performance by overfitting on an extremly simple optimization goal so we can check if the optimization is working at all 
 
 don't edit spec.md, follow what is in it 
 don't use docstrings, use comments when helpful to explain the why
@@ -74,14 +86,10 @@ don't use unnecessary
 don't start streamlit apps for me, I'll do that myself
 don't make thousands of real llm api calls in the tests
 
-do use TODO comments a lot
+
+# other
 do many edits at once if possible 
 do fix the issues in issues.txt if there are any
 fixing syntax errors has highest priority!
 when search blocks don't match it might be because the code was changed while you were working on it
 do put functions near related functions
-only work on fixing linting issues if the code is rated below 9
-when there are no severe linting issues, review spec.md and improve the implementation
-do add pytest unit tests in test_main.py
-do include e2e tests with real api calls
-
