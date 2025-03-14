@@ -386,28 +386,27 @@ def main():
     # Charts section
     st.header("Evolution Charts")
     
-    tab1, tab2, tab3 = st.tabs(["Rewards Over Time", "Reward Distribution", "Top Agents"])
+    # Show all charts at once instead of using tabs
+    st.subheader("Rewards Over Time")
+    rewards_chart = create_rewards_chart()
+    if rewards_chart:
+        st.pyplot(rewards_chart)
+    else:
+        st.info("No reward data available yet.")
     
-    with tab1:
-        rewards_chart = create_rewards_chart()
-        if rewards_chart:
-            st.pyplot(rewards_chart)
-        else:
-            st.info("No reward data available yet.")
+    st.subheader("Reward Distribution")
+    distribution_chart = create_distribution_chart()
+    if distribution_chart:
+        st.pyplot(distribution_chart)
+    else:
+        st.info("No reward data available yet.")
     
-    with tab2:
-        distribution_chart = create_distribution_chart()
-        if distribution_chart:
-            st.pyplot(distribution_chart)
-        else:
-            st.info("No reward data available yet.")
-    
-    with tab3:
-        top_agents_chart = create_top_agents_chart()
-        if top_agents_chart:
-            st.pyplot(top_agents_chart)
-        else:
-            st.info("No agent data available yet.")
+    st.subheader("Top Agents")
+    top_agents_chart = create_top_agents_chart()
+    if top_agents_chart:
+        st.pyplot(top_agents_chart)
+    else:
+        st.info("No agent data available yet.")
     
     # Best agent section
     st.header("Best Agent")
