@@ -123,25 +123,29 @@ def _find_hotspots(content: str) -> List[int]:
     return sorted(hotspots)
 
 def _perform_crossover(primary_content: str, secondary_content: str, hotspots: List[int]) -> str:
-    """Perform the actual crossover operation at a selected hotspot"""
+    """Perform the actual crossover operation at selected hotspots"""
     if not hotspots:
         return primary_content
         
     # Start with primary parent's content
     result = list(primary_content)
     
-    # Select a random hotspot for switching
-    switch_point = random.choice(hotspots)
+    # Ensure we have at least one chromosome jump on average
+    # Select 1-2 random hotspots for switching
+    num_switches = random.randint(1, min(2, len(hotspots)))
+    switch_points = sorted(random.sample(hotspots, num_switches))
     
-    # Take content from secondary parent from this point
-    if switch_point < len(secondary_content):
-        secondary_part = list(secondary_content[switch_point:])
-        
-        # Adjust result length
-        if switch_point + len(secondary_part) > len(result):
-            result = result[:switch_point] + secondary_part
-        else:
-            result[switch_point:switch_point+len(secondary_part)] = secondary_part
+    # Perform the switches
+    for switch_point in switch_points:
+        # Take content from secondary parent from this point
+        if switch_point < len(secondary_content):
+            secondary_part = list(secondary_content[switch_point:])
+            
+            # Adjust result length
+            if switch_point + len(secondary_part) > len(result):
+                result = result[:switch_point] + secondary_part
+            else:
+                result[switch_point:switch_point+len(secondary_part)] = secondary_part
     
     return ''.join(result)
 

@@ -3,11 +3,9 @@ import threading
 import time
 import os
 import sys
-import tempfile
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional, Callable
-from dataclasses import dataclass
 
 from llm_agent_evolution.domain.model import Agent, Chromosome, MAX_POPULATION_SIZE, TARGET_LENGTH
 from llm_agent_evolution.domain.services import select_parents_pareto, mate_agents
@@ -120,43 +118,18 @@ class EvolutionEngine:
         parent1 = parents[0]
         parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
         new_agent = mate_agents(parent1, parent2)
-        
+    
         # Track for verbose output if needed
         show_verbose = self._should_show_verbose_output(new_agent.id)
-        
+    
         if show_verbose:
             self._print_verbose_mating_info(parent1, parent2, new_agent)
-            print("\n3. MUTATION")
-            print(f"Mutation instructions: {new_agent.mutation_chromosome.content[:50]}...")
-            print(f"Before mutation: {new_agent.task_chromosome.content[:50]}...")
-        
-        # Mutate chromosomes
-        task_chromosome = self.llm_adapter.generate_mutation(
-            new_agent.task_chromosome,
-            new_agent.mutation_chromosome.content
-        )
-        
-        mate_selection_chromosome = self.llm_adapter.generate_mutation(
-            new_agent.mate_selection_chromosome,
-            new_agent.mutation_chromosome.content
-        )
-        
-        mutation_chromosome = self.llm_adapter.generate_mutation(
-            new_agent.mutation_chromosome,
-            new_agent.mutation_chromosome.content
-        )
-        
-        mutated_agent = Agent(
-            task_chromosome=task_chromosome,
-            mate_selection_chromosome=mate_selection_chromosome,
-            mutation_chromosome=mutation_chromosome
-        )
-        
-        if show_verbose:
-            print(f"After mutation: {mutated_agent.task_chromosome.content[:50]}...")
-            print("\n4. EVALUATION")
-        
-        return mutated_agent
+            print("\n3. EVALUATION")
+    
+        # Mutation happens indirectly through merging in mate_agents
+        # No explicit mutation step as per spec
+    
+        return new_agent
     
     def _add_to_population(self, agent: Agent) -> None:
         with self.population_lock:

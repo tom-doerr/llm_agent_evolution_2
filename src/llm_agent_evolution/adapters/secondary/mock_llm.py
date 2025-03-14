@@ -12,54 +12,23 @@ class MockLLMAdapter:
         self.eval_command = None
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
-        if chromosome.type == "task":
-            original = chromosome.content
-            
-            if not original:
-                options = [
-                    "Hello world",
-                    "Testing the mutation",
-                    "This is a sample output",
-                    "Random text for evaluation",
-                    "The quick brown fox jumps over the lazy dog"
-                ]
-                content = random.choice(options)
-            else:
-                modifications = [
-                    lambda s: s + " " + random.choice(["extra", "more", "additional"]),
-                    lambda s: s.replace(" ", " " + random.choice(["a", "b", "c"]) + " "),
-                    lambda s: s[:len(s)//2] + random.choice(["X", "Y", "Z"]) + s[len(s)//2:],
-                    lambda s: "".join(random.sample(s, len(s))) if len(s) > 1 else s,
-                    lambda s: s * 2 if len(s) < 10 else s
-                ]
-                content = random.choice(modifications)(original)
-        else:
-            if random.random() < 0.7 and chromosome.content:
-                content = chromosome.content
-                if "reward" not in content:
-                    content += " Consider the reward."
-                if "diversity" not in content:
-                    content += " Maintain diversity."
-            else:
-                options = [
-                    "Select the candidate with the highest reward",
-                    "Choose a mate with diverse characteristics",
-                    "Prefer candidates with better performance",
-                    "Try to improve the chromosome with each mutation",
-                    "Keep the chromosome focused on the evaluation criteria"
-                ]
-                content = random.choice(options)
-        
-        return Chromosome(
-            content=content,
-            type=chromosome.type
-        )
+        # We don't actually use this for mutation as per spec
+        # Just return the original chromosome
+        return chromosome
     
     def select_mate(self, agent: Agent, candidates: List[Agent]) -> Agent:
         if not candidates:
             return None
         
-        return random.choice(candidates)
+        # Simple weighted selection based on reward
+        weights = [c.reward if c.reward is not None else 0.1 for c in candidates]
+        total = sum(weights)
+        if total <= 0:
+            return random.choice(candidates)
+            
+        # Normalize weights
+        weights = [w/total for w in weights]
+        return random.choices(candidates, weights=weights, k=1)[0]
     
     def evaluate_task_output(self, output: str) -> float:
         if not self.eval_command:

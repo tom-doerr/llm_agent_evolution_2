@@ -13,32 +13,9 @@ class DSPyLLMAdapter:
         self.eval_command = None
     
     def generate_mutation(self, chromosome: Chromosome, mutation_instructions: str) -> Chromosome:
-        try:
-            prompt = f"""
-            You are modifying a chromosome for an AI agent.
-            
-            Original chromosome content:
-            {chromosome.content}
-            
-            Mutation instructions:
-            {mutation_instructions}
-            
-            Provide only the modified chromosome content:
-            """
-            
-            response = self.lm(prompt, max_tokens=MAX_OUTPUT_TOKENS)
-            response_text = self._process_llm_response(response)
-            
-            return Chromosome(
-                content=response_text.strip(),
-                type=chromosome.type
-            )
-        except Exception as e:
-            print(f"Error generating mutation: {e}")
-            return Chromosome(
-                content=chromosome.content,
-                type=chromosome.type
-            )
+        # We don't actually use this for mutation as per spec
+        # Just return the original chromosome
+        return chromosome
     
     def _process_llm_response(self, response: Any) -> str:
         if isinstance(response, list):
@@ -52,22 +29,20 @@ class DSPyLLMAdapter:
         
         try:
             candidates_info = "\n\n".join([
-                f"Candidate {i+1} DNA:\n"
+                f"Candidate {i+1}:\n"
                 f"ID: {candidate.id}\n"
-                f"Task Chromosome: {candidate.task_chromosome.content}\n"
-                f"Mate Selection Chromosome: {candidate.mate_selection_chromosome.content}\n"
-                f"Mutation Chromosome: {candidate.mutation_chromosome.content}\n"
+                f"Task: {candidate.task_chromosome.content[:50]}...\n"
                 f"Reward: {candidate.reward}"
                 for i, candidate in enumerate(candidates)
             ])
             
             prompt = f"""
-            You are selecting a mate for an AI agent based on DNA analysis.
+            You are selecting a mate for an AI agent.
             
-            Your DNA contains these mate selection instructions:
+            Your mate selection instructions:
             {agent.mate_selection_chromosome.content}
             
-            Available candidate DNA:
+            Available candidates:
             {candidates_info}
             
             Select one candidate by returning ONLY the number (1-{len(candidates)}) of your choice:

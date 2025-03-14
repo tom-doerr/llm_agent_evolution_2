@@ -2,33 +2,29 @@ import threading
 import time
 import sys
 import os
-import argparse
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor
 import random
 
 from .domain.model import Agent, Chromosome
 from .domain.services import select_parents_pareto, mate_agents
-from .ports.primary import EvolutionUseCase
-from .ports.secondary import LLMPort, LoggingPort, StatisticsPort
 from .adapters.secondary.llm import DSPyLLMAdapter
 from .adapters.secondary.mock_llm import MockLLMAdapter
 from .adapters.secondary.logging import FileLoggingAdapter
 from .adapters.secondary.statistics import StatisticsAdapter
-from .adapters.secondary.visualization import VisualizationAdapter
 from .adapters.primary.cli import CLIAdapter
 
-class EvolutionService(EvolutionUseCase):
-    """Implementation of the evolution use case"""
+class EvolutionService:
+    """Implementation of the evolution service"""
     
     def __init__(self, 
-                llm_port: LLMPort, 
-                logging_port: LoggingPort, 
-                statistics_port: StatisticsPort):
-        """Initialize the evolution service with required ports"""
-        self.llm_port = llm_port
-        self.logging_port = logging_port
-        self.statistics_port = statistics_port
+                llm_adapter, 
+                logging_adapter, 
+                statistics_adapter):
+        """Initialize the evolution service with required adapters"""
+        self.llm_adapter = llm_adapter
+        self.logging_adapter = logging_adapter
+        self.statistics_adapter = statistics_adapter
         self.population_lock = threading.Lock()
         self.stop_event = threading.Event()
     
@@ -56,32 +52,11 @@ class EvolutionService(EvolutionUseCase):
         return mate_agents(parent1, parent2)
     
     def mutate_agent(self, agent: Agent) -> Agent:
-        """Mutate an agent using its mutation chromosome"""
-        # Use the agent's own mutation chromosome as instructions
-        mutation_instructions = agent.mutation_chromosome.content
-        
-        # Mutate each chromosome
-        task_chromosome = self.llm_port.generate_mutation(
-            agent.task_chromosome, 
-            mutation_instructions
-        )
-        
-        mate_selection_chromosome = self.llm_port.generate_mutation(
-            agent.mate_selection_chromosome,
-            mutation_instructions
-        )
-        
-        mutation_chromosome = self.llm_port.generate_mutation(
-            agent.mutation_chromosome,
-            mutation_instructions
-        )
-        
-        # Create and return the mutated agent
-        return Agent(
-            task_chromosome=task_chromosome,
-            mate_selection_chromosome=mate_selection_chromosome,
-            mutation_chromosome=mutation_chromosome
-        )
+        """
+        Mutation happens indirectly through merging
+        This method is kept for compatibility but just returns the agent
+        """
+        return agent
     
     def evaluate_agent(self, agent: Agent) -> float:
         """Evaluate an agent and return its reward"""
@@ -89,17 +64,16 @@ class EvolutionService(EvolutionUseCase):
         task_output = agent.task_chromosome.content
         
         # Evaluate the output
-        reward = self.llm_port.evaluate_task_output(task_output)
+        reward = self.llm_adapter.evaluate_task_output(task_output)
         
         # Update the agent's reward
         agent.reward = reward
         
         # Track the reward in statistics
-        self.statistics_port.track_reward(reward)
-        
+        self.statistics_adapter.track_reward(reward)
         
         # Log the evaluation
-        self.logging_port.log_evaluation(agent)
+        self.logging_adapter.log_evaluation(agent)
         
         return reward
     
@@ -154,14 +128,11 @@ class EvolutionService(EvolutionUseCase):
                 # Create new agent through mating or random initialization
                 new_agent = self._create_new_agent(parents)
                 
-                # Mutate the new agent
-                mutated_agent = self.mutate_agent(new_agent)
-                
                 # Evaluate the agent
-                self.evaluate_agent(mutated_agent)
+                self.evaluate_agent(new_agent)
                 
                 # Add to population
-                self.add_to_population(population, mutated_agent)
+                self.add_to_population(population, new_agent)
                 
             except Exception as e:
                 print(f"Worker error: {e}")
@@ -183,7 +154,7 @@ class EvolutionService(EvolutionUseCase):
         else:
             # Select mate using the first parent's mate selection chromosome
             parent1 = parents[0]
-            parent2 = self.llm_port.select_mate(parent1, [p for p in parents[1:]])
+            parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
             
             # Create new agent through mating
             return self.mate_agents(parent1, parent2)
@@ -304,9 +275,9 @@ def create_application(model_name: str = "openrouter/google/gemini-2.0-flash-001
     
     # Create evolution service
     evolution_service = EvolutionService(
-        llm_port=llm_adapter,
-        logging_port=logging_adapter,
-        statistics_port=statistics_adapter
+        llm_adapter=llm_adapter,
+        logging_adapter=logging_adapter,
+        statistics_adapter=statistics_adapter
     )
     
     # Create CLI adapter

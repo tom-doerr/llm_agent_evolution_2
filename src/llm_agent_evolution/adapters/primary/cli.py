@@ -9,8 +9,8 @@ from llm_agent_evolution.domain.model import Agent, Chromosome
 class CLIAdapter:
     """Command-line interface adapter for the evolution system"""
     
-    def __init__(self, evolution_use_case: EvolutionUseCase):
-        """Initialize the CLI adapter with the evolution use case"""
+    def __init__(self, evolution_use_case):
+        """Initialize the CLI adapter with the evolution service"""
         self.evolution_use_case = evolution_use_case
     
     def parse_args(self) -> argparse.Namespace:
@@ -131,66 +131,23 @@ class CLIAdapter:
     
     def display_stats(self, stats: Dict[str, Any]) -> None:
         """Display statistics to the console in a clear, information-dense format"""
-        self._print_stats_header()
-        self._print_population_summary(stats)
+        print("\nPOPULATION STATS: ", end="")
+        print(f"Size: {stats.get('population_size', 0):,} | ", end="")
+        print(f"Evals: {stats.get('count', 0):,}")
         
         if stats.get('mean') is not None:
-            self._print_stats_table(stats)
-            self._print_improvement_metrics(stats)
-        
-        self._print_separator()
-    
-    def _print_separator(self, length: int = 60) -> None:
-        """Print a separator line"""
-        print("=" * length)
-    
-    def _print_stats_header(self) -> None:
-        """Print the statistics header"""
-        print("\n" + "=" * 60)
-        print("POPULATION STATISTICS")
-        print("=" * 60)
-    
-    def _print_population_summary(self, stats: Dict[str, Any]) -> None:
-        """Print the population summary"""
-        print(f"Population: {stats.get('population_size', 0):,} agents | "
-              f"Evaluations: {stats.get('count', 0):,}")
-    
-    def _print_stats_table(self, stats: Dict[str, Any]) -> None:
-        """Print the statistics table"""
-        print("=" * 60)
-        print(f"{'Metric':<15} {'Current':<10} {'Recent Window':<15}")
-        print("=" * 60)
-        
-        window_stats = stats.get('window_stats', {})
-        window_mean = window_stats.get('mean')
-        window_median = window_stats.get('median')
-        window_std = window_stats.get('std_dev')
-        
-        # Print each metric with both overall and window values
-        window_mean_str = f"{window_mean:.2f}" if window_mean is not None else "N/A"
-        print(f"{'Mean':<15} {stats.get('mean', 0.0):.2f} {window_mean_str}")
-        
-        window_median_str = f"{window_median:.2f}" if window_median is not None else "N/A"
-        print(f"{'Median':<15} {stats.get('median', 0.0):.2f} {window_median_str}")
-        
-        window_std_str = f"{window_std:.2f}" if window_std is not None else "N/A"
-        print(f"{'Std Dev':<15} {stats.get('std_dev', 0.0):.2f} {window_std_str}")
-        
-        print(f"{'Best':<15} {stats.get('best', 0.0):.2f}")
-        print(f"{'Worst':<15} {stats.get('worst', 0.0):.2f}")
-    
-    def _print_improvement_metrics(self, stats: Dict[str, Any]) -> None:
-        """Print improvement metrics"""
-        print("=" * 60)
-        if stats.get('improvement_rate') is not None:
-            print(f"Improvement rate: {stats.get('improvement_rate'):.4f} per minute")
+            print(f"Mean: {stats.get('mean', 0.0):.2f} | ", end="")
+            print(f"Median: {stats.get('median', 0.0):.2f} | ", end="")
+            print(f"StdDev: {stats.get('std_dev', 0.0):.2f}")
+            print(f"Best: {stats.get('best', 0.0):.2f} | ", end="")
+            print(f"Worst: {stats.get('worst', 0.0):.2f}")
             
-        if stats.get('time_since_last_best') is not None:
-            minutes = stats.get('time_since_last_best') / 60
-            if minutes < 1:
-                print(f"Time since last best: {stats.get('time_since_last_best'):.1f} seconds")
-            else:
-                print(f"Time since last best: {minutes:.2f} minutes")
+            # Window stats
+            window_stats = stats.get('window_stats', {})
+            if window_stats.get('mean') is not None:
+                print(f"Recent (n={window_stats.get('count', 0)}): ", end="")
+                print(f"Mean: {window_stats.get('mean', 0.0):.2f} | ", end="")
+                print(f"Median: {window_stats.get('median', 0.0):.2f}")
     
     def run(self) -> int:
         """Run the CLI application"""
@@ -233,26 +190,19 @@ class CLIAdapter:
         
         try:
             # Show startup banner
-            print("\n" + "=" * 60)
-            print("LLM AGENT EVOLUTION".center(60))
-            print("=" * 60)
+            print("LLM AGENT EVOLUTION")
             
-            # Configuration summary
-            print("\nConfiguration:")
-            print(f"- Population size: {args.population_size}")
-            print(f"- Parallel agents: {args.parallel_agents}")
-            print(f"- Max evaluations: {args.max_evaluations or 'unlimited'}")
-            print(f"- Model: {args.model}")
-            print(f"- Using {'mock' if args.use_mock else 'real'} LLM adapter")
+            # Configuration summary - more concise
+            print(f"Population: {args.population_size} | Parallel: {args.parallel_agents} | Model: {args.model}")
+            print(f"Using {'mock' if args.use_mock else 'real'} LLM | Max evals: {args.max_evaluations or 'unlimited'}")
             if args.eval_command:
-                print(f"- Evaluation command: {args.eval_command}")
-            print(f"- Log file: {args.log_file}")
+                print(f"Eval command: {args.eval_command}")
             if args.seed is not None:
-                print(f"- Random seed: {args.seed}")
+                print(f"Random seed: {args.seed}")
             if context:
-                print(f"- Context: {context[:50]}{'...' if len(context) > 50 else ''}")
+                print(f"Context: {context[:50]}{'...' if len(context) > 50 else ''}")
             if args.load:
-                print(f"- Loading agent from: {args.load}")
+                print(f"Loading agent from: {args.load}")
             
             print("\nStarting evolution process...")
             start_time = time.time()
@@ -280,9 +230,9 @@ class CLIAdapter:
                     # Format progress message - simplified to reduce output volume
                     if args.max_evaluations:
                         percent = current_count / args.max_evaluations * 100
-                        print(f"Progress: {current_count:,}/{args.max_evaluations:,} evaluations ({percent:.1f}%)")
+                        print(f"Progress: {current_count:,}/{args.max_evaluations:,} ({percent:.1f}%)")
                     else:
-                        print(f"Progress: {current_count:,} evaluations | Running time: {(now - start_time)/60:.1f} min")
+                        print(f"Progress: {current_count:,} evals | Time: {(now - start_time)/60:.1f} min")
                     
                     last_count = current_count
                     last_print_time = now
@@ -322,8 +272,6 @@ class CLIAdapter:
                             reward = self.evolution_use_case.evaluate_agent(loaded_agent)
                             print(f"\nAgent evaluation complete")
                             print(f"Reward: {reward}")
-                            
-                            # For testing purposes, print the agent's task chromosome content
                             print(f"\nAgent output: {loaded_agent.task_chromosome.content}")
                             return 0
                 except Exception as e:
@@ -349,18 +297,13 @@ class CLIAdapter:
             # Display best agent
             best_agent = max(population, key=lambda a: a.reward if a.reward is not None else float('-inf'))
             
-            print("\n" + "=" * 60)
-            print("BEST AGENT".center(60))
-            print("=" * 60)
-            print(f"ID: {best_agent.id}")
-            print(f"Reward: {best_agent.reward}")
+            print("\nBEST AGENT")
+            print(f"ID: {best_agent.id} | Reward: {best_agent.reward}")
             
             # Show task chromosome with character count
             task_content = best_agent.task_chromosome.content
-            print(f"\nTask Chromosome ({len(task_content)} chars):")
-            print("-" * 60)
+            print(f"Task Chromosome ({len(task_content)} chars):")
             print(task_content)
-            print("-" * 60)
             
             # Save agent if requested
             if hasattr(args, 'save') and args.save:
@@ -387,17 +330,15 @@ class CLIAdapter:
                     
                     with open(args.save, 'wb') as f:
                         tomli_w.dump(agent_data, f)
-                    print(f"\nBest agent saved to: {args.save}")
+                    print(f"Best agent saved to: {args.save}")
                 except Exception as e:
-                    print(f"\nError saving agent: {e}")
+                    print(f"Error saving agent: {e}")
             
             # Show summary
-            print("\n" + "=" * 60)
-            print(f"Evolution completed in {total_runtime/60:.2f} minutes")
+            print(f"\nEvolution completed in {total_runtime/60:.2f} minutes")
             print(f"Total evaluations: {stats.get('count', 0):,}")
             print(f"Final population size: {stats.get('population_size', 0):,}")
             print(f"Best reward achieved: {stats.get('best', 0):.2f}")
-            print("=" * 60)
             
             return 0
         except KeyboardInterrupt:
@@ -407,21 +348,15 @@ class CLIAdapter:
             print(f"\nError: {e}")
             import traceback
             print(traceback.format_exc())
-            
-            # More helpful error message with suggestions
-            print("\nTroubleshooting suggestions:")
-            print("- Check if the evaluation command is correct and executable")
-            print("- Ensure any input files exist and are readable")
-            print("- Verify that the model name is valid")
-            print("- Try using --use-mock for testing without real LLM calls")
-            print("- Check log file for more details")
-            
             return 1
 
 def main():
     """Entry point for the CLI application"""
-    # This will be implemented in application.py to wire everything together
-    pass
+    from llm_agent_evolution.application import create_application
+    
+    # Create the application and run it
+    cli = create_application()
+    return cli.run()
 
 if __name__ == "__main__":
     sys.exit(main())
