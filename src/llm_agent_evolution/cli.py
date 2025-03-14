@@ -151,7 +151,7 @@ def _add_common_arguments(parser):
     )
     
     parser.add_argument(
-        "--initial-content",
+        "--initial-content", "-i",
         type=str,
         default="",
         help="Initial content for the chromosomes"
@@ -204,7 +204,7 @@ def _add_optimize_subparser(subparsers):
     )
     
     optimize_parser.add_argument(
-        "--initial-content", "-I",
+        "--optimize-initial-content", "-I",
         type=str,
         default="",
         help="Initial content for the chromosomes"
@@ -272,7 +272,7 @@ def _add_standalone_subparser(subparsers):
     )
     
     standalone_parser.add_argument(
-        "--initial-content", "-I",
+        "--standalone-initial-content", "-S",
         type=str,
         default="",
         help="Initial content for the chromosomes"
@@ -312,7 +312,7 @@ def _add_demo_subparser(subparsers):
     )
     
     demo_parser.add_argument(
-        "--initial-content", "-I",
+        "--demo-initial-content", "-D",
         type=str,
         default="a",
         help="Initial content for task chromosome"
@@ -480,7 +480,13 @@ def _handle_optimize_command(args):
     from llm_agent_evolution.universal_optimize import run_optimizer
     
     # Get initial content from file if specified
-    initial_content = args.initial_content if hasattr(args, 'initial_content') else ""
+    initial_content = ""
+    
+    # Check for initial content in different argument names based on command
+    if hasattr(args, 'optimize_initial_content') and args.optimize_initial_content:
+        initial_content = args.optimize_initial_content
+    elif hasattr(args, 'initial_content') and args.initial_content:
+        initial_content = args.initial_content
     if hasattr(args, 'initial_file') and args.initial_file:
         if not os.path.exists(args.initial_file):
             print(f"Error: Initial content file not found: {args.initial_file}")
@@ -544,12 +550,15 @@ def _handle_standalone_command(args):
     
     # Run the standalone optimizer
     try:
+        # Get initial content
+        initial_content = args.standalone_initial_content if hasattr(args, 'standalone_initial_content') else ""
+        
         results = run_standalone_optimizer(
             eval_command=args.eval_command,
             population_size=args.population_size,
             parallel_agents=args.parallel_agents,
             max_evaluations=args.max_evaluations,
-            initial_content=args.initial_content if hasattr(args, 'initial_content') else "",
+            initial_content=initial_content,
             random_seed=args.seed,
             verbose=args.verbose if hasattr(args, 'verbose') else False
         )
@@ -575,7 +584,7 @@ def _handle_demo_command(args):
     # Run the demo
     return run_evolution_demo(
         use_mock=args.use_mock,
-        initial_content=args.initial_content if hasattr(args, 'initial_content') else "a"
+        initial_content=args.demo_initial_content if hasattr(args, 'demo_initial_content') else "a"
     )
 
 if __name__ == "__main__":
