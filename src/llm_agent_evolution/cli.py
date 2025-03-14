@@ -157,11 +157,13 @@ def _add_common_arguments(parser):
         help="Initial content for the chromosomes"
     )
     
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    # Only add verbose if it doesn't exist yet
+    if not any(action.dest == 'verbose' for action in parser._actions):
+        parser.add_argument(
+            "--verbose", "-v",
+            action="store_true",
+            help="Enable verbose output"
+        )
 
 def _add_evolve_subparser(subparsers):
     """Add the evolve subparser"""
@@ -232,11 +234,7 @@ def _add_optimize_subparser(subparsers):
         help="Maximum number of characters for chromosomes"
     )
     
-    optimize_parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose mode with detailed output"
-    )
+    # Verbose flag is added in _add_common_arguments
     
 def _add_standalone_subparser(subparsers):
     """Add the standalone subparser"""
@@ -285,11 +283,7 @@ def _add_standalone_subparser(subparsers):
         help="Random seed for reproducibility"
     )
     
-    standalone_parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    # Verbose flag is added in _add_common_arguments
     
     standalone_parser.add_argument(
         "--save", "-o",
