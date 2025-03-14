@@ -30,7 +30,6 @@ dependencies = [
 
 [project.scripts]
 llm-evolve = "llm_agent_evolution.cli:main"
-llm-optimize = "llm_agent_evolution.universal_optimize:main"
 
 [project.urls]
 "Homepage" = "https://github.com/yourusername/llm_agent_evolution"

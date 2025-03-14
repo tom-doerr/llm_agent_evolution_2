@@ -57,6 +57,10 @@ pip install -e ".[test]"
 Run a quick test using the mock LLM adapter (no real API calls):
 
 ```bash
+# Using the installed CLI tool
+llm-evolve evolve --quick-test
+
+# Or using the module directly
 python -m llm_agent_evolution evolve --quick-test
 ```
 
@@ -65,7 +69,7 @@ python -m llm_agent_evolution evolve --quick-test
 Run the evolution process with a real LLM:
 
 ```bash
-python -m llm_agent_evolution evolve --population-size 50 --parallel-agents 8 --model "openrouter/google/gemini-2.0-flash-001"
+llm-evolve evolve --population-size 50 --parallel-agents 8 --model "openrouter/google/gemini-2.0-flash-001"
 ```
 
 ### Universal Optimizer
@@ -73,7 +77,7 @@ python -m llm_agent_evolution evolve --population-size 50 --parallel-agents 8 --
 Run the universal optimizer with a custom evaluation command:
 
 ```bash
-python -m llm_agent_evolution optimize "python examples/count_a.py" --population-size 50 --parallel-agents 8
+llm-evolve optimize "python examples/count_a.py" --population-size 50 --parallel-agents 8
 ```
 
 ### Standalone Optimizer (No LLM API Calls)
@@ -81,7 +85,7 @@ python -m llm_agent_evolution optimize "python examples/count_a.py" --population
 Run the simplified standalone optimizer that doesn't use LLM API calls:
 
 ```bash
-python -m llm_agent_evolution standalone "python examples/count_a.py" --population-size 50 --parallel-agents 8
+llm-evolve standalone "python examples/count_a.py" --population-size 50 --parallel-agents 8
 ```
 
 ### Interactive Demo
@@ -89,7 +93,7 @@ python -m llm_agent_evolution standalone "python examples/count_a.py" --populati
 Run an interactive step-by-step demo of the evolution process:
 
 ```bash
-python -m llm_agent_evolution demo --use-mock
+llm-evolve demo --use-mock
 ```
 
 ## How the Optimization Works
