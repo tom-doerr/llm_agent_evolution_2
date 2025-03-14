@@ -8,6 +8,7 @@ import argparse
 import time
 import json
 import threading
+import signal
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional
 
@@ -101,6 +102,18 @@ class UniversalOptimizer:
         # Get the task output from the task chromosome
         task_output = agent.task_chromosome.content
         
+        # Ensure task_output is a string
+        if not isinstance(task_output, str):
+            print(f"Warning: task_output is not a string, it's a {type(task_output)}. Converting to string.")
+            try:
+                if isinstance(task_output, list):
+                    task_output = " ".join(str(item) for item in task_output)
+                else:
+                    task_output = str(task_output)
+            except Exception as e:
+                print(f"Error converting task_output to string: {e}")
+                task_output = ""
+        
         try:
             # Evaluate using the script
             reward = self.script_evaluator.evaluate(
@@ -128,28 +141,37 @@ class UniversalOptimizer:
         # Use the agent's own mutation chromosome as instructions
         mutation_instructions = agent.mutation_chromosome.content
         
-        # Mutate each chromosome
-        task_chromosome = self.llm_adapter.generate_mutation(
-            agent.task_chromosome, 
-            mutation_instructions
-        )
-        
-        mate_selection_chromosome = self.llm_adapter.generate_mutation(
-            agent.mate_selection_chromosome,
-            mutation_instructions
-        )
-        
-        mutation_chromosome = self.llm_adapter.generate_mutation(
-            agent.mutation_chromosome,
-            mutation_instructions
-        )
-        
-        # Create and return the mutated agent
-        return Agent(
-            task_chromosome=task_chromosome,
-            mate_selection_chromosome=mate_selection_chromosome,
-            mutation_chromosome=mutation_chromosome
-        )
+        try:
+            # Mutate each chromosome
+            task_chromosome = self.llm_adapter.generate_mutation(
+                agent.task_chromosome, 
+                mutation_instructions
+            )
+            
+            mate_selection_chromosome = self.llm_adapter.generate_mutation(
+                agent.mate_selection_chromosome,
+                mutation_instructions
+            )
+            
+            mutation_chromosome = self.llm_adapter.generate_mutation(
+                agent.mutation_chromosome,
+                mutation_instructions
+            )
+            
+            # Create and return the mutated agent
+            return Agent(
+                task_chromosome=task_chromosome,
+                mate_selection_chromosome=mate_selection_chromosome,
+                mutation_chromosome=mutation_chromosome
+            )
+        except Exception as e:
+            print(f"Mutation error: {e}")
+            # Return a copy of the original agent if mutation fails
+            return Agent(
+                task_chromosome=Chromosome(content=agent.task_chromosome.content, type="task"),
+                mate_selection_chromosome=Chromosome(content=agent.mate_selection_chromosome.content, type="mate_selection"),
+                mutation_chromosome=Chromosome(content=agent.mutation_chromosome.content, type="mutation")
+            )
     
     def _evolution_worker(self) -> None:
         """Worker function for evolution thread"""
@@ -228,6 +250,16 @@ class UniversalOptimizer:
             "parallel_agents": self.parallel_agents,
             "max_evaluations": max_evaluations or "unlimited"
         })
+        
+        # Add signal handler for graceful shutdown
+        original_sigint_handler = signal.getsignal(signal.SIGINT)
+        def sigint_handler(sig, frame):
+            print("\nGracefully stopping optimization...")
+            self.stop_event.set()
+            # Restore original handler to allow forced exit with another Ctrl+C
+            signal.signal(signal.SIGINT, original_sigint_handler)
+        
+        signal.signal(signal.SIGINT, sigint_handler)
         
         # Start worker threads
         workers = []
