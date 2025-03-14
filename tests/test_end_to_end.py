@@ -135,8 +135,8 @@ print(len(text))  # Reward is the length of the text
             
             # Check that it ran successfully
             assert result.returncode == 0
-        assert "Starting optimization" in result.stdout
-        assert "Optimization completed" in result.stdout
+        assert "Starting evolution" in result.stdout
+        assert "Evolution completed" in result.stdout
     finally:
         # Clean up
         if os.path.exists(script_path):
