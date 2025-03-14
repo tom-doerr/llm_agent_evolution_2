@@ -168,16 +168,16 @@ class CLIAdapter:
         
         # Print each metric with both overall and window values
         window_mean_str = f"{window_mean:.2f}" if window_mean is not None else "N/A"
-        print(f"{'Mean':<15} {stats.get('mean', 0):<10.2f} {window_mean_str}")
+        print(f"{'Mean':<15} {stats.get('mean', 0.0):.2f} {window_mean_str}")
         
         window_median_str = f"{window_median:.2f}" if window_median is not None else "N/A"
-        print(f"{'Median':<15} {stats.get('median', 0):<10.2f} {window_median_str}")
+        print(f"{'Median':<15} {stats.get('median', 0.0):.2f} {window_median_str}")
         
         window_std_str = f"{window_std:.2f}" if window_std is not None else "N/A"
-        print(f"{'Std Dev':<15} {stats.get('std_dev', 0):<10.2f} {window_std_str}")
+        print(f"{'Std Dev':<15} {stats.get('std_dev', 0.0):.2f} {window_std_str}")
         
-        print(f"{'Best':<15} {stats.get('best', 0):<10.2f}")
-        print(f"{'Worst':<15} {stats.get('worst', 0):<10.2f}")
+        print(f"{'Best':<15} {stats.get('best', 0.0):.2f}")
+        print(f"{'Worst':<15} {stats.get('worst', 0.0):.2f}")
     
     def _print_improvement_metrics(self, stats: Dict[str, Any]) -> None:
         """Print improvement metrics"""

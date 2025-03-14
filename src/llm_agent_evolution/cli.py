@@ -9,12 +9,25 @@ from typing import List, Optional
 
 def main(args: Optional[List[str]] = None) -> int:
     """Main CLI entry point"""
+    # Check for positional eval_command before creating the parser
+    eval_command = None
+    if args is None and len(sys.argv) > 1 and not sys.argv[1].startswith('-') and sys.argv[1] not in ["evolve", "optimize", "standalone", "demo", "inference"]:
+        # We have a positional argument that's not a subcommand
+        eval_command = sys.argv[1]
+        # Remove it from sys.argv to avoid confusing the parser
+        sys.argv.pop(1)
+        # We'll handle it after parsing
+    
     # Create the argument parser
     parser = _create_main_parser()
     
     try:
         # Parse arguments
         parsed_args = parser.parse_args(args)
+        
+        # If we found a positional eval_command, add it to the parsed args
+        if eval_command:
+            parsed_args.eval_command = eval_command
         
         # Handle the command based on arguments
         if hasattr(parsed_args, 'command') and parsed_args.command:
@@ -44,13 +57,6 @@ def _create_main_parser():
     parser = argparse.ArgumentParser(
         description="LLM Agent Evolution - A framework for evolving LLM-based agents",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    
-    # Add eval_command as a positional argument to the main parser
-    parser.add_argument(
-        "eval_command",
-        nargs="?",
-        help="Command to run for evaluation (receives agent output via stdin, returns score as last line)"
     )
     
     # Add the main arguments to the top-level parser
@@ -376,16 +382,10 @@ def _handle_default_command(args):
     if hasattr(args, 'load') and args.load:
         return _handle_loaded_agent(args)
     
-    # If eval_command is specified (either positional or via --eval-command), run the optimizer
+    # If eval_command is specified via --eval-command, run the optimizer
     eval_command = None
     if hasattr(args, 'eval_command') and args.eval_command:
         eval_command = args.eval_command
-    
-    # Check for positional eval_command from sys.argv if not found in args
-    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-') and sys.argv[1] not in ["evolve", "optimize", "standalone", "demo", "inference"]:
-        eval_command = sys.argv[1]
-        # Set it in args for _handle_optimize_command
-        args.eval_command = eval_command
         
     if eval_command:
         print(f"Using evaluation command: {eval_command}")
@@ -502,8 +502,8 @@ def _handle_evolve_command(args):
     from llm_agent_evolution.application import create_application
     
     # Determine the evaluation command
-    eval_command = args.eval_command
-    if not eval_command and hasattr(args, 'eval_command') and args.eval_command:
+    eval_command = None
+    if hasattr(args, 'eval_command') and args.eval_command:
         eval_command = args.eval_command
     
     # Create the application
@@ -554,10 +554,6 @@ def _handle_optimize_command(args):
     eval_command = None
     if hasattr(args, 'eval_command'):
         eval_command = args.eval_command
-    
-    # Check for positional eval_command
-    if not eval_command and len(sys.argv) > 1 and not sys.argv[1].startswith('-') and sys.argv[1] not in ["evolve", "optimize", "standalone", "demo", "inference"]:
-        eval_command = sys.argv[1]
     
     if not eval_script and not eval_command:
         print("Error: Either eval_command or --eval-script must be specified")
@@ -624,6 +620,25 @@ def _handle_optimize_command(args):
         verbose = False
         if hasattr(args, 'verbose'):
             verbose = args.verbose
+        
+        # Get context from stdin if available
+        context = None
+        if hasattr(args, 'context') and args.context:
+            context = args.context
+        elif hasattr(args, 'context_file') and args.context_file and os.path.exists(args.context_file):
+            with open(args.context_file, 'r') as f:
+                context = f.read()
+        elif not sys.stdin.isatty():
+            # Read from stdin if available and not already used for arguments
+            try:
+                context = sys.stdin.read()
+                print(f"Read context from stdin: {context[:50]}{'...' if len(context) > 50 else ''}")
+            except Exception as e:
+                print(f"Error reading from stdin: {e}")
+        
+        # Set context in environment if provided
+        if context:
+            os.environ['AGENT_CONTEXT'] = context
         
         result = run_optimizer(
             eval_script=eval_script,

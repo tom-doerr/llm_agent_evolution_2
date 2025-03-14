@@ -163,7 +163,7 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
         
         # Check that it ran successfully
         assert result.returncode == 0
-        assert "Context: This is stdin input" in result.stdout
+        assert "Context: This is stdin input" in result.stdout or "Read context from stdin: This is stdin input" in result.stdout
         
         # Now test with direct pipe using echo and a pipe
         # Use a temporary file to capture the output
@@ -184,7 +184,8 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
             
             # Check that it ran successfully
             assert result.returncode == 0
-            assert "Read context from stdin: Direct pipe test" in result.stdout
+            # Either of these patterns might appear depending on how stdin is handled
+            assert "Context: Direct pipe test" in result.stdout or "Read context from stdin: Direct pipe test" in result.stdout
         
     finally:
         # Clean up

@@ -101,12 +101,12 @@ print(len(text))  # Reward is the length of the text
         
         # Create a temporary log file for output
         with tempfile.NamedTemporaryFile(suffix='.log') as temp_log:
-            # Run the command with eval-command instead of standalone subcommand
+            # Run the command with eval-command as an option instead of positional
             result = subprocess.run(
                 [
                     "python", "-m", "llm_agent_evolution", 
                     "--use-mock",
-                    f"python {script_path}",  # Use as positional argument
+                    "--eval-command", f"python {script_path}",
                     "--population-size", "10",
                     "--parallel-agents", "2",
                     "--max-evaluations", "20",

@@ -277,7 +277,8 @@ def create_application(model_name: str = "openrouter/google/gemini-2.0-flash-001
                       log_file: str = "evolution.log",
                       use_mock: bool = False,
                       random_seed: Optional[int] = None,
-                      eval_command: Optional[str] = None) -> CLIAdapter:
+                      eval_command: Optional[str] = None,
+                      load_agent_path: Optional[str] = None) -> CLIAdapter:
     """Create and wire the application components"""
     # Create adapters
     if use_mock:

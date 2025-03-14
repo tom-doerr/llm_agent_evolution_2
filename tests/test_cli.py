@@ -125,11 +125,11 @@ print(len(text))  # Reward is the length of the text
         # Make the script executable
         os.chmod(script_path, 0o755)
         
-        # Run the command with the evaluation command
+        # Run the command with the evaluation command as an option instead of positional
         result = subprocess.run(
             [
                 "python", "-m", "llm_agent_evolution", 
-                f"python {script_path}",  # Positional argument as eval command
+                "--eval-command", f"python {script_path}",
                 "--use-mock",
                 "--population-size", "10",
                 "--parallel-agents", "2",
