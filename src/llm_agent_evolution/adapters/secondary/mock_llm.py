@@ -54,8 +54,8 @@ class MockLLMAdapter(LLMPort):
         If no command is set, returns a random score for testing
         """
         if not self.eval_command:
-            # For testing, return a random score
-            return random.uniform(0, 10)
+            # For testing, return the length of the output
+            return len(output)
             
         # Use the script evaluator to run the command
         from llm_agent_evolution.adapters.secondary.script_evaluator import ScriptEvaluatorAdapter
@@ -83,4 +83,4 @@ class MockLLMAdapter(LLMPort):
             return reward
         except Exception as e:
             print(f"Evaluation error: {e}")
-            return random.uniform(0, 5)  # Fallback for testing
+            return len(output)  # Fallback to length for testing

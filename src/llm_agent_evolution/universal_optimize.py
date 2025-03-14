@@ -93,9 +93,9 @@ class UniversalOptimizer:
             # Initial mate selection chromosome with instructions
             mate_selection_content = """
             Select the mate with the highest reward.
-            If rewards are equal, choose the one with more diverse content.
-            Consider both reward and content diversity.
-            Focus on long-term improvement potential.
+            Choose mates that have shown improvement.
+            Consider diversity in the population.
+            Look for complementary strengths.
             """
             
             # Initial mutation chromosome with instructions
@@ -104,7 +104,6 @@ class UniversalOptimizer:
             Try different approaches and patterns.
             Keep the content concise and focused.
             Experiment with different structures.
-            Avoid getting stuck in local optima.
             """
             
             agent = Agent(

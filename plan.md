@@ -97,3 +97,8 @@ Create a flexible, powerful framework for evolving LLM-based agents through evol
 3. Enhance verbose output to show full chromosomes
 4. Create more example evaluation scripts
 5. Improve documentation and tutorials
+6. Remove unnecessary code and legacy components
+7. Simplify the command-line interface
+8. Add more test cases for the evaluation system
+9. Improve error handling in the script evaluator
+10. Create a simplified standalone version of the universal optimizer
