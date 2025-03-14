@@ -123,13 +123,11 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
         env = os.environ.copy()
         if context:
             env['AGENT_CONTEXT'] = context
+            print(f"Using context for evaluation: {context[:50]}{'...' if len(context) > 50 else ''}")
         elif 'AGENT_CONTEXT' in os.environ:
             # Preserve existing context from environment
             env['AGENT_CONTEXT'] = os.environ['AGENT_CONTEXT']
-            
-        # Print debug info about context
-        if context or 'AGENT_CONTEXT' in env:
-            print(f"Using context for evaluation: {env.get('AGENT_CONTEXT', '')[:50]}...")
+            print(f"Using context from environment: {os.environ['AGENT_CONTEXT'][:50]}{'...' if len(os.environ['AGENT_CONTEXT']) > 50 else ''}")
             
         try:
             # Run the script with the output as stdin
@@ -144,6 +142,12 @@ class ScriptEvaluatorAdapter(ScriptEvaluatorPort):
             
             # Send the output to the script
             stdout, stderr = process.communicate(input=output, timeout=timeout)
+            
+            # Print context information from the output for debugging
+            if stdout and ('context' in stdout.lower() or 'agent_context' in stdout.lower()):
+                context_lines = [line for line in stdout.split('\n') if 'context' in line.lower()]
+                if context_lines:
+                    print(f"Context from script output: {context_lines[0]}")
             
             # Check for errors
             if process.returncode != 0:

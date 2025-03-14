@@ -87,6 +87,11 @@ def test_combine_task_chromosomes_length_handling():
     # Check that at least some results are exactly TARGET_LENGTH
     assert TARGET_LENGTH in results, f"None of the results had the target length {TARGET_LENGTH}"
     
+    # Check that a significant portion of results are at or near TARGET_LENGTH
+    near_target = [r for r in results if abs(r - TARGET_LENGTH) <= 2]
+    assert len(near_target) >= len(results) * 0.5, \
+        f"Only {len(near_target)} out of {len(results)} results were near the target length"
+    
     # Reset the random seed
     random.seed(None)
 

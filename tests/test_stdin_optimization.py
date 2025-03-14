@@ -77,8 +77,10 @@ print(reward)  # This must be the last line and a number
         # Check that it ran successfully
         assert result.returncode == 0
         
-        # More lenient check - just verify context is used somewhere
-        assert any(context in line for line in result.stdout.splitlines()) or "Context" in result.stdout, \
+        # Check for context in output - more specific check
+        assert "Using context for evaluation: abcdefghijklmnopqrstuvwxyz" in result.stdout or \
+               "Using context: abcdefghijklmnopqrstuvwxyz" in result.stdout or \
+               "Context: abcdefghijklmnopqrstuvwxyz" in result.stdout, \
             f"Context '{context}' not found in output. Output: {result.stdout[:500]}..."
         
         # Now test with context file
@@ -147,7 +149,7 @@ print(reward)  # This must be the last line and a number
         
         # Create a shell script that pipes input to the optimizer
         shell_script = """#!/bin/sh
-echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-command "python {}" --population-size 5 --parallel-agents 2 --max-evaluations 3
+echo "This is stdin input with special characters: @#$%" | python -m llm_agent_evolution --use-mock --eval-command "python {}" --population-size 5 --parallel-agents 2 --max-evaluations 3
 """.format(script_path)
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as shell_file:
@@ -172,12 +174,14 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
         # Check that it ran successfully
         assert result.returncode == 0
         
-        # More lenient check - just verify stdin input is used somewhere
-        assert "This is stdin input" in result.stdout, "Stdin input not found in output"
+        # More specific check for stdin input
+        assert "This is stdin input with special characters: @#$%" in result.stdout or \
+               "Read context from stdin: This is stdin input with special characters: @#$%" in result.stdout, \
+               "Stdin input not found in output"
         
         # Test with a more direct approach using Python's subprocess
         # This is more reliable than shell=True with pipes
-        context_text = "Direct subprocess test"
+        context_text = "Direct subprocess test with JSON data: {\"key\": \"value\"}"
         
         # Create a process that will provide the context via stdin
         process = subprocess.Popen(
@@ -206,7 +210,56 @@ echo "This is stdin input" | python -m llm_agent_evolution --use-mock --eval-com
         assert process.returncode == 0
         
         # Check that the context was used
-        assert context_text in stdout or f"Read context from stdin: {context_text}" in stdout
+        assert context_text in stdout or \
+               f"Read context from stdin: {context_text}" in stdout or \
+               "Direct subprocess test with JSON data" in stdout, \
+               "Context from stdin not found in output"
+        
+        # Test with a more complex JSON input
+        json_context = """
+        {
+            "task": "Optimize for maximum 'a' characters",
+            "constraints": {
+                "max_length": 23,
+                "allowed_chars": "abcdefghijklmnopqrstuvwxyz"
+            },
+            "examples": [
+                {"input": "test", "output": "aaaaa"},
+                {"input": "more", "output": "aaaaaaaaaaa"}
+            ]
+        }
+        """
+        
+        # Create a process that will provide the JSON context via stdin
+        process = subprocess.Popen(
+            [
+                "python", "-m", "llm_agent_evolution",
+                "--use-mock",
+                "--eval-command", f"python {script_path}",
+                "--population-size", "5",
+                "--parallel-agents", "2",
+                "--max-evaluations", "3"
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Send the JSON context via stdin
+        stdout, stderr = process.communicate(input=json_context, timeout=60)
+        
+        # Print output for debugging
+        print(f"STDOUT: {stdout}")
+        print(f"STDERR: {stderr}")
+        
+        # Check that it ran successfully
+        assert process.returncode == 0
+        
+        # Check that the context was used - look for snippets that would indicate the JSON was processed
+        assert "task" in stdout or "Optimize for maximum" in stdout or \
+               "Read context from stdin" in stdout, \
+               "JSON context from stdin not found in output"
         
     finally:
         # Clean up

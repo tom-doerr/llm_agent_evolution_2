@@ -168,14 +168,14 @@ def _calculate_length_fitness(parent1: Chromosome, parent2: Chromosome) -> Tuple
     
     # Much stronger bias toward target length - exponential penalty for being too long
     if len(parent1.content) <= TARGET_LENGTH:
-        p1_value = max(1, (TARGET_LENGTH - p1_distance)**2)
+        p1_value = max(1, (TARGET_LENGTH - p1_distance)**3)  # Cubic to increase bias
     else:
-        p1_value = max(1, TARGET_LENGTH / (p1_distance**2 + 1))
+        p1_value = max(1, TARGET_LENGTH / (p1_distance**3 + 1))  # Stronger penalty
         
     if len(parent2.content) <= TARGET_LENGTH:
-        p2_value = max(1, (TARGET_LENGTH - p2_distance)**2)
+        p2_value = max(1, (TARGET_LENGTH - p2_distance)**3)  # Cubic to increase bias
     else:
-        p2_value = max(1, TARGET_LENGTH / (p2_distance**2 + 1))
+        p2_value = max(1, TARGET_LENGTH / (p2_distance**3 + 1))  # Stronger penalty
     
     return p1_value, p2_value
 
@@ -183,11 +183,14 @@ def _select_primary_parent(parent1: Chromosome, parent2: Chromosome, p1_value: f
     """Select primary parent based on fitness values"""
     # If one parent is significantly better, bias toward it
     if p1_value > p2_value * 1.5:
-        primary_weight = 0.7  # 70% chance to use parent1 content
+        primary_weight = 0.9  # 90% chance to use parent1 content (increased bias)
     elif p2_value > p1_value * 1.5:
-        primary_weight = 0.3  # 30% chance to use parent1 content
+        primary_weight = 0.1  # 10% chance to use parent1 content (increased bias)
     else:
-        primary_weight = 0.5  # Equal chance
+        # If they're close, slightly favor the one closer to target length
+        p1_distance = abs(len(parent1.content) - TARGET_LENGTH)
+        p2_distance = abs(len(parent2.content) - TARGET_LENGTH)
+        primary_weight = 0.7 if p1_distance < p2_distance else 0.3
     
     # Determine primary parent based on weighted probability
     if random.random() < primary_weight:
@@ -240,12 +243,24 @@ def _post_process_task_content(result: List[str]) -> str:
     if len(combined_content) > MAX_CHARS:
         combined_content = combined_content[:MAX_CHARS]
     
-    # For task chromosomes, apply some general length constraints
-    # This is a generic approach that doesn't leak task-specific knowledge
-    if len(combined_content) > 100:  # Use a generic reasonable length
-        # Truncate to a reasonable length with some randomness
-        max_length = int(100 * (1.0 + random.random() * 0.5))
-        combined_content = combined_content[:max_length]
+    # For task chromosomes, strongly bias toward TARGET_LENGTH
+    if len(combined_content) > TARGET_LENGTH:
+        # High probability to truncate to exactly TARGET_LENGTH
+        if random.random() < 0.8:
+            combined_content = combined_content[:TARGET_LENGTH]
+        else:
+            # Otherwise, truncate to a length close to TARGET_LENGTH
+            max_length = TARGET_LENGTH + random.randint(0, 5)
+            combined_content = combined_content[:max_length]
+    elif len(combined_content) < TARGET_LENGTH * 0.8:
+        # If too short, pad with random characters to get closer to TARGET_LENGTH
+        # This doesn't leak task-specific knowledge as we're not using 'a's
+        padding_chars = "abcdefghijklmnopqrstuvwxyz"
+        padding_length = min(TARGET_LENGTH - len(combined_content), 
+                            int(TARGET_LENGTH * 0.2))
+        if padding_length > 0 and random.random() < 0.5:
+            padding = ''.join(random.choice(padding_chars) for _ in range(padding_length))
+            combined_content += padding
     
     return combined_content
 

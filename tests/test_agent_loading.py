@@ -223,7 +223,8 @@ print(a_count)
         # Check that it ran successfully
         assert result.returncode == 0
         assert "Agent output: aaaaaaaaaaaaaaaaaaaaaaa" in result.stdout
-        assert "23" in result.stdout  # The reward
+        assert "a count: 23" in result.stdout  # More specific check
+        assert "Reward: 23" in result.stdout  # More specific check
         
         # Now test with context
         result = subprocess.run(

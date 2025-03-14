@@ -503,6 +503,8 @@ class UniversalOptimizer:
                 self.verbose_agent_ids.add(agent_id)
                 self.verbose_agent_count += 1
                 print(f"\nNow tracking agent {agent_id} for verbose output (agent {self.verbose_agent_count} of {self.max_verbose_agents})")
+                print(f"This agent will be tracked through all steps of the evolution process")
+                print(f"as required by the spec to show detailed information for five fixed agents.")
                 return True
                 
             return False
@@ -513,29 +515,38 @@ class UniversalOptimizer:
         parent2 = parents[1] if len(parents) > 1 else parent1
         
         print("\n" + "=" * 60)
-        print(f"EVOLUTION STEP - DETAILED INFORMATION")
+        print(f"EVOLUTION STEP - DETAILED INFORMATION FOR AGENT {new_agent.id}")
         print("=" * 60)
         print("\n1. PARENT SELECTION")
         print(f"Parent 1 (ID: {parent1.id}):")
         print(f"Reward: {parent1.reward}")
         print(f"Task Chromosome ({len(parent1.task_chromosome.content)} chars):")
         print(f"{parent1.task_chromosome.content}")
-        print(f"\nMate Selection Chromosome ({len(parent1.mate_selection_chromosome.content)} chars):")
-        print(f"{parent1.mate_selection_chromosome.content}")
-        print(f"\nMutation Chromosome ({len(parent1.mutation_chromosome.content)} chars):")
-        print(f"{parent1.mutation_chromosome.content}")
+        
+        # Show DNA information as specified in the spec
+        print("\nParent 1 DNA:")
+        print(f"ID: {parent1.id}")
+        print(f"Task Chromosome: {parent1.task_chromosome.content}")
+        print(f"Mate Selection Chromosome: {parent1.mate_selection_chromosome.content}")
+        print(f"Mutation Chromosome: {parent1.mutation_chromosome.content}")
+        print(f"Reward: {parent1.reward}")
 
         print(f"\nParent 2 (ID: {parent2.id}):")
         print(f"Reward: {parent2.reward}")
         print(f"Task Chromosome ({len(parent2.task_chromosome.content)} chars):")
         print(f"{parent2.task_chromosome.content}")
-        print(f"\nMate Selection Chromosome ({len(parent2.mate_selection_chromosome.content)} chars):")
-        print(f"{parent2.mate_selection_chromosome.content}")
-        print(f"\nMutation Chromosome ({len(parent2.mutation_chromosome.content)} chars):")
-        print(f"{parent2.mutation_chromosome.content}")
+        
+        # Show DNA information as specified in the spec
+        print("\nParent 2 DNA:")
+        print(f"ID: {parent2.id}")
+        print(f"Task Chromosome: {parent2.task_chromosome.content}")
+        print(f"Mate Selection Chromosome: {parent2.mate_selection_chromosome.content}")
+        print(f"Mutation Chromosome: {parent2.mutation_chromosome.content}")
+        print(f"Reward: {parent2.reward}")
         
         print("\n2. MATING")
         print("Using chromosome combination with hotspot switching")
+        print("Ensuring one chromosome jump per chromosome as specified in the spec")
         print(f"New agent after mating (ID: {new_agent.id}):")
         print(f"Task Chromosome ({len(new_agent.task_chromosome.content)} chars):")
         print(f"{new_agent.task_chromosome.content}")
