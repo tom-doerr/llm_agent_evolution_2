@@ -195,10 +195,15 @@ class UniversalOptimizer:
                 else:
                     # Select mate using the first parent's mate selection chromosome
                     parent1 = parents[0]
-                    parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
-                    
-                    # Create new agent through mating
-                    new_agent = mate_agents(parent1, parent2)
+                    try:
+                        parent2 = self.llm_adapter.select_mate(parent1, [p for p in parents[1:]])
+                        # Create new agent through mating
+                        new_agent = mate_agents(parent1, parent2)
+                    except Exception as e:
+                        print(f"Mate selection error: {e}")
+                        # If mate selection fails, just use the second parent
+                        parent2 = parents[1] if len(parents) > 1 else parent1
+                        new_agent = mate_agents(parent1, parent2)
                 
                 # Mutate the new agent
                 mutated_agent = self.mutate_agent(new_agent)
